@@ -1,24 +1,52 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
-import { employees } from "../../data/mockData";
+import { employeesApi } from "../../services/api";
 
 export default function EmployeeProfile() {
   const { id } = useParams();
-  const employee = employees.find((e) => e.id === parseInt(id));
+  const [employee, setEmployee] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    fetchEmployee();
+  }, [id]);
+
+  const fetchEmployee = async () => {
+    try {
+      setLoading(true);
+      const data = await employeesApi.getById(id);
+      setEmployee(data);
+      setError(null);
+    } catch (err) {
+      setError(err.message);
+      console.error("Error fetching employee:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat("en-PH", {
       style: "currency",
       currency: "PHP",
       minimumFractionDigits: 0,
-    }).format(amount);
+    }).format(amount || 0);
   };
 
-  if (!employee) {
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
+
+  if (error || !employee) {
     return (
       <div className="text-center py-12">
         <h2 className="text-xl font-semibold text-gray-800">
-          Employee not found
+          {error || "Employee not found"}
         </h2>
         <Link
           to="/employees"
@@ -63,7 +91,9 @@ export default function EmployeeProfile() {
           </div>
         </div>
         <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-          Edit Profile
+          <Link to="/employees" className="text-white">
+            Back to List
+          </Link>
         </button>
       </div>
 
@@ -71,8 +101,8 @@ export default function EmployeeProfile() {
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
         <div className="flex flex-col md:flex-row items-start md:items-center gap-6">
           <div className="w-24 h-24 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-bold text-3xl">
-            {employee.firstName[0]}
-            {employee.lastName[0]}
+            {employee.firstName?.[0]}
+            {employee.lastName?.[0]}
           </div>
           <div className="flex-1">
             <h2 className="text-2xl font-bold text-gray-800">
@@ -87,18 +117,20 @@ export default function EmployeeProfile() {
                     : "bg-gray-100 text-gray-700"
                 }`}
               >
-                {employee.status}
+                {employee.status || "Active"}
               </span>
               <span
                 className={`px-3 py-1 text-sm font-medium rounded-full ${
-                  employee.employmentType === "Regular"
+                  employee.employmentType === "Regular" ||
+                  employee.employmentType === "regular"
                     ? "bg-blue-100 text-blue-700"
-                    : employee.employmentType === "Probationary"
+                    : employee.employmentType === "Probationary" ||
+                        employee.employmentType === "probationary"
                       ? "bg-yellow-100 text-yellow-700"
                       : "bg-purple-100 text-purple-700"
                 }`}
               >
-                {employee.employmentType}
+                {employee.employmentType || "Regular"}
               </span>
               <span className="text-sm text-gray-500">
                 <span className="font-medium">Department:</span>{" "}
@@ -147,15 +179,21 @@ export default function EmployeeProfile() {
             </div>
             <div>
               <label className="text-sm text-gray-500">Phone Number</label>
-              <p className="font-medium text-gray-800">{employee.phone}</p>
+              <p className="font-medium text-gray-800">
+                {employee.phone || "N/A"}
+              </p>
             </div>
             <div>
               <label className="text-sm text-gray-500">Address</label>
-              <p className="font-medium text-gray-800">{employee.address}</p>
+              <p className="font-medium text-gray-800">
+                {employee.address || "N/A"}
+              </p>
             </div>
             <div>
               <label className="text-sm text-gray-500">Birth Date</label>
-              <p className="font-medium text-gray-800">{employee.birthDate}</p>
+              <p className="font-medium text-gray-800">
+                {employee.birthDate || "N/A"}
+              </p>
             </div>
           </div>
         </div>
@@ -195,11 +233,15 @@ export default function EmployeeProfile() {
             </div>
             <div>
               <label className="text-sm text-gray-500">Hire Date</label>
-              <p className="font-medium text-gray-800">{employee.hireDate}</p>
+              <p className="font-medium text-gray-800">
+                {employee.hireDate || "N/A"}
+              </p>
             </div>
             <div>
               <label className="text-sm text-gray-500">Status</label>
-              <p className="font-medium text-gray-800">{employee.status}</p>
+              <p className="font-medium text-gray-800">
+                {employee.status || "Active"}
+              </p>
             </div>
           </div>
         </div>
@@ -240,7 +282,9 @@ export default function EmployeeProfile() {
                 Total Monthly Compensation
               </label>
               <p className="font-bold text-gray-800 text-xl">
-                {formatCurrency(employee.salary + employee.allowances)}
+                {formatCurrency(
+                  (employee.salary || 0) + (employee.allowances || 0),
+                )}
               </p>
             </div>
           </div>
@@ -268,25 +312,25 @@ export default function EmployeeProfile() {
             <div>
               <label className="text-sm text-gray-500">SSS Number</label>
               <p className="font-medium text-gray-800 font-mono">
-                {employee.sss}
+                {employee.sss || "N/A"}
               </p>
             </div>
             <div>
               <label className="text-sm text-gray-500">PhilHealth Number</label>
               <p className="font-medium text-gray-800 font-mono">
-                {employee.philhealth}
+                {employee.philhealth || "N/A"}
               </p>
             </div>
             <div>
               <label className="text-sm text-gray-500">Pag-IBIG Number</label>
               <p className="font-medium text-gray-800 font-mono">
-                {employee.pagibig}
+                {employee.pagibig || "N/A"}
               </p>
             </div>
             <div>
               <label className="text-sm text-gray-500">TIN</label>
               <p className="font-medium text-gray-800 font-mono">
-                {employee.tin}
+                {employee.tin || "N/A"}
               </p>
             </div>
           </div>

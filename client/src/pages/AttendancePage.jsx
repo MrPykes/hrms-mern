@@ -1,14 +1,137 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Table from "../components/Table";
-import { attendance } from "../data/mockData";
+import Modal from "../components/Modal";
+import { attendanceApi, employeesApi } from "../services/api";
 
 export default function Attendance() {
-  const [selectedMonth, setSelectedMonth] = useState("02/2026");
+  const [attendance, setAttendance] = useState([]);
+  const [employees, setEmployees] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [selectedRecord, setSelectedRecord] = useState(null);
   const [selectedStatus, setSelectedStatus] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  const [formData, setFormData] = useState({
+    employeeId: "",
+    employeeName: "",
+    date: "",
+    timeIn: "",
+    timeOut: "",
+    status: "Present",
+  });
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      const [attendanceData, employeesData] = await Promise.all([
+        attendanceApi.getAll(),
+        employeesApi.getAll(),
+      ]);
+      setAttendance(attendanceData);
+      setEmployees(employeesData.filter((e) => e.status === "Active"));
+    } catch (err) {
+      console.error("Error fetching data:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const resetForm = () => {
+    setFormData({
+      employeeId: "",
+      employeeName: "",
+      date: "",
+      timeIn: "",
+      timeOut: "",
+      status: "Present",
+    });
+  };
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    if (name === "employeeId") {
+      const emp = employees.find((e) => e.id === value);
+      setFormData((prev) => ({
+        ...prev,
+        employeeId: value,
+        employeeName: emp ? `${emp.firstName} ${emp.lastName}` : "",
+      }));
+    } else {
+      setFormData((prev) => ({ ...prev, [name]: value }));
+    }
+  };
+
+  const handleAddAttendance = async () => {
+    try {
+      setSaving(true);
+      const newRecord = await attendanceApi.create(formData);
+      setAttendance([newRecord, ...attendance]);
+      setShowAddModal(false);
+      resetForm();
+    } catch (err) {
+      alert("Error adding attendance: " + err.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleEditClick = (record) => {
+    setSelectedRecord(record);
+    const timeIn24 =
+      record.timeIn !== "-" ? convertTo24Hour(record.timeIn) : "";
+    const timeOut24 =
+      record.timeOut !== "-" ? convertTo24Hour(record.timeOut) : "";
+    setFormData({
+      employeeId: record.employeeId,
+      employeeName: record.employeeName,
+      date: formatDateForInput(record.date),
+      timeIn: timeIn24,
+      timeOut: timeOut24,
+      status: record.status,
+    });
+    setShowEditModal(true);
+  };
+
+  const formatDateForInput = (dateStr) => {
+    if (!dateStr) return "";
+    const [month, day, year] = dateStr.split("/");
+    return `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`;
+  };
+
+  const convertTo24Hour = (time12) => {
+    if (!time12 || time12 === "-") return "";
+    const [time, modifier] = time12.split(" ");
+    let [hours, minutes] = time.split(":");
+    if (modifier === "PM" && hours !== "12") hours = parseInt(hours) + 12;
+    if (modifier === "AM" && hours === "12") hours = "00";
+    return `${hours.toString().padStart(2, "0")}:${minutes}`;
+  };
+
+  const handleUpdateAttendance = async () => {
+    try {
+      setSaving(true);
+      const updated = await attendanceApi.update(selectedRecord.id, formData);
+      setAttendance(
+        attendance.map((r) => (r.id === selectedRecord.id ? updated : r)),
+      );
+      setShowEditModal(false);
+      setSelectedRecord(null);
+      resetForm();
+    } catch (err) {
+      alert("Error updating attendance: " + err.message);
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const filteredAttendance = attendance.filter((record) => {
-    const matchesStatus = !selectedStatus || record.status === selectedStatus;
-    return matchesStatus;
+    return !selectedStatus || record.status === selectedStatus;
   });
 
   const columns = [
@@ -62,6 +185,18 @@ export default function Attendance() {
         </span>
       ),
     },
+    {
+      header: "Actions",
+      accessor: "id",
+      render: (_, row) => (
+        <button
+          onClick={() => handleEditClick(row)}
+          className="px-3 py-1 text-sm text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+        >
+          Edit
+        </button>
+      ),
+    },
   ];
 
   const stats = {
@@ -70,14 +205,162 @@ export default function Attendance() {
     absent: attendance.filter((a) => a.status === "Absent").length,
   };
 
+  const AttendanceForm = ({ onSubmit, submitText }) => (
+    <form
+      className="space-y-4"
+      onSubmit={(e) => {
+        e.preventDefault();
+        onSubmit();
+      }}
+    >
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">
+          Employee
+        </label>
+        <select
+          name="employeeId"
+          value={formData.employeeId}
+          onChange={handleInputChange}
+          required
+          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+        >
+          <option value="">Select Employee</option>
+          {employees.map((emp) => (
+            <option key={emp.id} value={emp.id}>
+              {emp.firstName} {emp.lastName}
+            </option>
+          ))}
+        </select>
+      </div>
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">
+          Date
+        </label>
+        <input
+          type="date"
+          name="date"
+          value={formData.date}
+          onChange={handleInputChange}
+          required
+          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+        />
+      </div>
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">
+          Status
+        </label>
+        <select
+          name="status"
+          value={formData.status}
+          onChange={handleInputChange}
+          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+        >
+          <option value="Present">Present</option>
+          <option value="Late">Late</option>
+          <option value="Absent">Absent</option>
+        </select>
+      </div>
+      {formData.status !== "Absent" && (
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Time In
+            </label>
+            <input
+              type="time"
+              name="timeIn"
+              value={formData.timeIn}
+              onChange={handleInputChange}
+              required
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Time Out
+            </label>
+            <input
+              type="time"
+              name="timeOut"
+              value={formData.timeOut}
+              onChange={handleInputChange}
+              required
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            />
+          </div>
+        </div>
+      )}
+      <div className="flex justify-end gap-3 pt-4 border-t">
+        <button
+          type="button"
+          onClick={() => {
+            setShowAddModal(false);
+            setShowEditModal(false);
+            resetForm();
+          }}
+          disabled={saving}
+          className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50"
+        >
+          Cancel
+        </button>
+        <button
+          type="submit"
+          disabled={saving}
+          className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
+        >
+          {saving && (
+            <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+            </svg>
+          )}
+          {saving ? "Saving..." : submitText}
+        </button>
+      </div>
+    </form>
+  );
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-800">Attendance</h1>
-        <p className="text-gray-500 mt-1">Track employee attendance records</p>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-800">Attendance</h1>
+          <p className="text-gray-500 mt-1">
+            Track employee attendance records
+          </p>
+        </div>
+        <button
+          onClick={() => {
+            resetForm();
+            setShowAddModal(true);
+          }}
+          className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+        >
+          <svg
+            className="w-5 h-5"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M12 4v16m8-8H4"
+            />
+          </svg>
+          Add Attendance
+        </button>
       </div>
 
-      {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
           <div className="flex items-center justify-between">
@@ -152,50 +435,57 @@ export default function Attendance() {
         </div>
       </div>
 
-      {/* Filters */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Month
-            </label>
-            <select
-              value={selectedMonth}
-              onChange={(e) => setSelectedMonth(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            >
-              <option value="02/2026">February 2026</option>
-              <option value="01/2026">January 2026</option>
-              <option value="12/2025">December 2025</option>
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Status
-            </label>
-            <select
-              value={selectedStatus}
-              onChange={(e) => setSelectedStatus(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            >
-              <option value="">All Status</option>
-              <option value="Present">Present</option>
-              <option value="Late">Late</option>
-              <option value="Absent">Absent</option>
-            </select>
-          </div>
-          <div className="flex items-end">
-            <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-              Export Report
-            </button>
-          </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Status
+          </label>
+          <select
+            value={selectedStatus}
+            onChange={(e) => setSelectedStatus(e.target.value)}
+            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+          >
+            <option value="">All Status</option>
+            <option value="Present">Present</option>
+            <option value="Late">Late</option>
+            <option value="Absent">Absent</option>
+          </select>
         </div>
       </div>
 
-      {/* Table */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
         <Table columns={columns} data={filteredAttendance} />
       </div>
+
+      <Modal
+        isOpen={showAddModal}
+        onClose={() => {
+          setShowAddModal(false);
+          resetForm();
+        }}
+        title="Add Attendance"
+        size="md"
+      >
+        <AttendanceForm
+          onSubmit={handleAddAttendance}
+          submitText="Add Record"
+        />
+      </Modal>
+
+      <Modal
+        isOpen={showEditModal}
+        onClose={() => {
+          setShowEditModal(false);
+          resetForm();
+        }}
+        title="Edit Attendance"
+        size="md"
+      >
+        <AttendanceForm
+          onSubmit={handleUpdateAttendance}
+          submitText="Update Record"
+        />
+      </Modal>
     </div>
   );
 }

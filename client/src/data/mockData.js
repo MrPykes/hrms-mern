@@ -628,6 +628,19 @@ export const departments = [
   "Sales",
 ];
 
+export const positions = [
+  "Software Developer",
+  "HR Manager",
+  "Accountant",
+  "Marketing Specialist",
+  "Operations Manager",
+  "Administrative Assistant",
+  "Sales Representative",
+  "Senior Developer",
+  "Project Manager",
+  "Team Lead",
+];
+
 export const leaveTypes = ["Vacation Leave", "Sick Leave", "Emergency Leave"];
 
 export const dashboardStats = {

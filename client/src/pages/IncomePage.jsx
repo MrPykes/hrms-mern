@@ -1,10 +1,45 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Table from "../components/Table";
 import Modal from "../components/Modal";
-import { income, expenses, incomeSources } from "../data/mockData";
+import { incomeApi, expensesApi } from "../services/api";
+import { incomeSources } from "../data/mockData";
 
 export default function Income() {
+  const [incomeList, setIncomeList] = useState([]);
+  const [totalExpenses, setTotalExpenses] = useState(0);
+  const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [selectedIncome, setSelectedIncome] = useState(null);
+  const [saving, setSaving] = useState(false);
+
+  const [formData, setFormData] = useState({
+    date: "",
+    source: "Client Payments",
+    description: "",
+    amount: "",
+  });
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      const [incomeData, expenseSummary] = await Promise.all([
+        incomeApi.getAll(),
+        expensesApi.getSummary(),
+      ]);
+      setIncomeList(incomeData);
+      setTotalExpenses(expenseSummary.total || 0);
+    } catch (err) {
+      console.error("Error fetching data:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat("en-PH", {
@@ -12,6 +47,87 @@ export default function Income() {
       currency: "PHP",
       minimumFractionDigits: 0,
     }).format(amount);
+  };
+
+  const formatDateForInput = (dateStr) => {
+    if (!dateStr) return "";
+    const [month, day, year] = dateStr.split("/");
+    return `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`;
+  };
+
+  const resetForm = () => {
+    setFormData({
+      date: "",
+      source: "Client Payments",
+      description: "",
+      amount: "",
+    });
+  };
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleAddIncome = async () => {
+    try {
+      setSaving(true);
+      const newIncome = await incomeApi.create(formData);
+      setIncomeList([newIncome, ...incomeList]);
+      setShowAddModal(false);
+      resetForm();
+    } catch (err) {
+      alert("Error adding income: " + err.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleEditClick = (income) => {
+    setSelectedIncome(income);
+    setFormData({
+      date: formatDateForInput(income.date),
+      source: income.source,
+      description: income.description,
+      amount: income.amount.toString(),
+    });
+    setShowEditModal(true);
+  };
+
+  const handleUpdateIncome = async () => {
+    try {
+      setSaving(true);
+      const updated = await incomeApi.update(selectedIncome.id, formData);
+      setIncomeList(
+        incomeList.map((inc) => (inc.id === selectedIncome.id ? updated : inc)),
+      );
+      setShowEditModal(false);
+      setSelectedIncome(null);
+      resetForm();
+    } catch (err) {
+      alert("Error updating income: " + err.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDeleteClick = (income) => {
+    setSelectedIncome(income);
+    setShowDeleteModal(true);
+  };
+
+  const handleDeleteIncome = async () => {
+    try {
+      setSaving(true);
+      await incomeApi.delete(selectedIncome.id);
+      setIncomeList(incomeList.filter((inc) => inc.id !== selectedIncome.id));
+      setShowDeleteModal(false);
+      setSelectedIncome(null);
+    } catch (err) {
+      alert("Error deleting income: " + err.message);
+    } finally {
+      setSaving(false);
+    }
   };
 
   const columns = [
@@ -43,20 +159,143 @@ export default function Income() {
         </span>
       ),
     },
+    {
+      header: "Actions",
+      accessor: "id",
+      render: (_, row) => (
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => handleEditClick(row)}
+            className="px-3 py-1 text-sm text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+          >
+            Edit
+          </button>
+          <button
+            onClick={() => handleDeleteClick(row)}
+            className="px-3 py-1 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+          >
+            Delete
+          </button>
+        </div>
+      ),
+    },
   ];
 
-  const totalIncome = income.reduce((sum, i) => sum + i.amount, 0);
-  const totalExpenses = expenses.reduce((sum, e) => sum + e.amount, 0);
+  const totalIncome = incomeList.reduce((sum, i) => sum + i.amount, 0);
   const netProfit = totalIncome - totalExpenses;
 
   const sourceTotals = incomeSources
     .map((source) => ({
       source,
-      total: income
+      total: incomeList
         .filter((i) => i.source === source)
         .reduce((sum, i) => sum + i.amount, 0),
     }))
     .filter((s) => s.total > 0);
+
+  const IncomeForm = ({ onSubmit, submitText }) => (
+    <form
+      className="space-y-4"
+      onSubmit={(e) => {
+        e.preventDefault();
+        onSubmit();
+      }}
+    >
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">
+          Date
+        </label>
+        <input
+          type="date"
+          name="date"
+          value={formData.date}
+          onChange={handleInputChange}
+          required
+          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+        />
+      </div>
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">
+          Source
+        </label>
+        <select
+          name="source"
+          value={formData.source}
+          onChange={handleInputChange}
+          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+        >
+          {incomeSources.map((source) => (
+            <option key={source} value={source}>
+              {source}
+            </option>
+          ))}
+        </select>
+      </div>
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">
+          Description
+        </label>
+        <input
+          type="text"
+          name="description"
+          value={formData.description}
+          onChange={handleInputChange}
+          required
+          placeholder="Enter income description..."
+          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+        />
+      </div>
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">
+          Amount (₱)
+        </label>
+        <input
+          type="number"
+          name="amount"
+          value={formData.amount}
+          onChange={handleInputChange}
+          required
+          placeholder="0.00"
+          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+        />
+      </div>
+      <div className="flex justify-end gap-3 pt-4 border-t">
+        <button
+          type="button"
+          onClick={() => {
+            setShowAddModal(false);
+            setShowEditModal(false);
+            resetForm();
+          }}
+          disabled={saving}
+          className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50"
+        >
+          Cancel
+        </button>
+        <button
+          type="submit"
+          disabled={saving}
+          className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
+        >
+          {saving && (
+            <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+            </svg>
+          )}
+          {saving ? "Saving..." : submitText}
+        </button>
+      </div>
+    </form>
+  );
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -66,7 +305,10 @@ export default function Income() {
           <p className="text-gray-500 mt-1">Track revenue and income sources</p>
         </div>
         <button
-          onClick={() => setShowAddModal(true)}
+          onClick={() => {
+            resetForm();
+            setShowAddModal(true);
+          }}
           className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
         >
           <svg
@@ -86,7 +328,6 @@ export default function Income() {
         </button>
       </div>
 
-      {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
           <div className="flex items-center justify-between">
@@ -114,7 +355,6 @@ export default function Income() {
             </div>
           </div>
         </div>
-
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
           <div className="flex items-center justify-between">
             <div>
@@ -141,7 +381,6 @@ export default function Income() {
             </div>
           </div>
         </div>
-
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
           <div className="flex items-center justify-between">
             <div>
@@ -174,145 +413,105 @@ export default function Income() {
         </div>
       </div>
 
-      {/* Income by Source */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-        <h3 className="text-lg font-semibold text-gray-800 mb-4">
-          Income by Source
-        </h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {sourceTotals.map((item) => (
-            <div key={item.source} className="p-4 bg-gray-50 rounded-lg">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-medium text-gray-600">
-                  {item.source}
-                </span>
-                <span className="font-semibold text-gray-800">
-                  {formatCurrency(item.total)}
-                </span>
+      {sourceTotals.length > 0 && (
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+          <h3 className="text-lg font-semibold text-gray-800 mb-4">
+            Income by Source
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {sourceTotals.map((item) => (
+              <div key={item.source} className="p-4 bg-gray-50 rounded-lg">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-medium text-gray-600">
+                    {item.source}
+                  </span>
+                  <span className="font-semibold text-gray-800">
+                    {formatCurrency(item.total)}
+                  </span>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div
+                    className="bg-green-500 h-2 rounded-full"
+                    style={{ width: `${(item.total / totalIncome) * 100}%` }}
+                  ></div>
+                </div>
+                <p className="text-xs text-gray-500 mt-1">
+                  {((item.total / totalIncome) * 100).toFixed(1)}% of total
+                </p>
               </div>
-              <div className="w-full bg-gray-200 rounded-full h-2">
-                <div
-                  className="bg-green-500 h-2 rounded-full"
-                  style={{ width: `${(item.total / totalIncome) * 100}%` }}
-                ></div>
-              </div>
-              <p className="text-xs text-gray-500 mt-1">
-                {((item.total / totalIncome) * 100).toFixed(1)}% of total
-              </p>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Comparison Card */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-        <h3 className="text-lg font-semibold text-gray-800 mb-4">
-          Income vs Expenses Comparison
-        </h3>
-        <div className="flex items-end justify-center gap-12 h-48">
-          <div className="flex flex-col items-center">
-            <div
-              className="w-24 bg-green-500 rounded-t-lg transition-all"
-              style={{
-                height: `${(totalIncome / Math.max(totalIncome, totalExpenses)) * 150}px`,
-              }}
-            ></div>
-            <p className="mt-2 text-sm font-medium text-gray-600">Income</p>
-            <p className="text-sm text-green-600 font-semibold">
-              {formatCurrency(totalIncome)}
-            </p>
-          </div>
-          <div className="flex flex-col items-center">
-            <div
-              className="w-24 bg-red-500 rounded-t-lg transition-all"
-              style={{
-                height: `${(totalExpenses / Math.max(totalIncome, totalExpenses)) * 150}px`,
-              }}
-            ></div>
-            <p className="mt-2 text-sm font-medium text-gray-600">Expenses</p>
-            <p className="text-sm text-red-600 font-semibold">
-              {formatCurrency(totalExpenses)}
-            </p>
+            ))}
           </div>
         </div>
-      </div>
+      )}
 
-      {/* Table */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
         <div className="px-6 py-4 border-b border-gray-200">
           <h3 className="text-lg font-semibold text-gray-800">
             Income Records
           </h3>
         </div>
-        <Table columns={columns} data={income} />
+        <Table columns={columns} data={incomeList} />
       </div>
 
-      {/* Add Income Modal */}
       <Modal
         isOpen={showAddModal}
-        onClose={() => setShowAddModal(false)}
+        onClose={() => {
+          setShowAddModal(false);
+          resetForm();
+        }}
         title="Add Income"
         size="md"
       >
-        <form className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Date
-            </label>
-            <input
-              type="date"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Source
-            </label>
-            <select className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-              {incomeSources.map((source) => (
-                <option key={source} value={source}>
-                  {source}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Description
-            </label>
-            <input
-              type="text"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              placeholder="Enter income description..."
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Amount (₱)
-            </label>
-            <input
-              type="number"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              placeholder="0.00"
-            />
-          </div>
+        <IncomeForm onSubmit={handleAddIncome} submitText="Add Income" />
+      </Modal>
+
+      <Modal
+        isOpen={showEditModal}
+        onClose={() => {
+          setShowEditModal(false);
+          resetForm();
+        }}
+        title="Edit Income"
+        size="md"
+      >
+        <IncomeForm onSubmit={handleUpdateIncome} submitText="Update Income" />
+      </Modal>
+
+      <Modal
+        isOpen={showDeleteModal}
+        onClose={() => setShowDeleteModal(false)}
+        title="Delete Income"
+        size="sm"
+      >
+        <div className="space-y-4">
+          <p className="text-gray-600">
+            Are you sure you want to delete this income:{" "}
+            <span className="font-semibold">{selectedIncome?.description}</span>
+            ?
+          </p>
           <div className="flex justify-end gap-3 pt-4 border-t">
             <button
-              type="button"
-              onClick={() => setShowAddModal(false)}
-              className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+              onClick={() => setShowDeleteModal(false)}
+              disabled={saving}
+              className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50"
             >
               Cancel
             </button>
             <button
-              type="button"
-              onClick={() => setShowAddModal(false)}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              onClick={handleDeleteIncome}
+              disabled={saving}
+              className="inline-flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50"
             >
-              Add Income
+              {saving && (
+                <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                </svg>
+              )}
+              {saving ? "Deleting..." : "Delete"}
             </button>
           </div>
-        </form>
+        </div>
       </Modal>
     </div>
   );

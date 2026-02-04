@@ -27,6 +27,7 @@ export default function App() {
           <Route path="employees/:id" element={<EmployeeProfile />} />
           <Route path="attendance" element={<Attendance />} />
           <Route path="leave" element={<Leave />} />
+          <Route path="leaves" element={<Leave />} />
           <Route path="payroll" element={<Payroll />} />
           <Route path="expenses" element={<Expenses />} />
           <Route path="income" element={<Income />} />

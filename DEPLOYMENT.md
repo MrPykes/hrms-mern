@@ -25,4 +25,4 @@ npm run start
 
 6. Cron: Hostinger may restrict long-running cron processes; prefer platform process manager or external scheduler for payroll if necessary.
 
-*** End Patch
+\*\*\* End Patch

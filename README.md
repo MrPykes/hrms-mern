@@ -27,6 +27,7 @@ npm run dev
 The client dev server runs on a different port (Vite default). The client will call the backend at `/api/ping` if both are served from the same origin or you can use the full backend URL.
 
 If you'd like, I can:
+
 - install dependencies here now,
 - add a root `package.json` with `concurrently` to run both,
 - add Docker configs,

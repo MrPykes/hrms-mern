@@ -2,8 +2,10 @@ import React, { useState, useEffect } from "react";
 import Table from "../components/Table";
 import Modal from "../components/Modal";
 import { payrollApi, employeesApi } from "../services/api";
+import { useToast } from "../components/Toast";
 
 export default function Payroll() {
+  const { addToast } = useToast();
   const [payrollList, setPayrollList] = useState([]);
   const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -75,8 +77,9 @@ export default function Payroll() {
       setPayrollList([newPayroll, ...payrollList]);
       setShowAddModal(false);
       resetForm();
+      addToast("Payroll added successfully!", "success");
     } catch (err) {
-      alert("Error adding payroll: " + err.message);
+      addToast("Error adding payroll: " + err.message, "error");
     } finally {
       setSaving(false);
     }
@@ -105,8 +108,9 @@ export default function Payroll() {
       setShowEditModal(false);
       setSelectedPayroll(null);
       resetForm();
+      addToast("Payroll updated successfully!", "success");
     } catch (err) {
-      alert("Error updating payroll: " + err.message);
+      addToast("Error updating payroll: " + err.message, "error");
     } finally {
       setSaving(false);
     }
@@ -126,8 +130,9 @@ export default function Payroll() {
       );
       setShowPayModal(false);
       setSelectedPayroll(null);
+      addToast("Payroll marked as paid!", "success");
     } catch (err) {
-      alert("Error marking as paid: " + err.message);
+      addToast("Error marking as paid: " + err.message, "error");
     } finally {
       setSaving(false);
     }
@@ -145,8 +150,9 @@ export default function Payroll() {
       setPayrollList(payrollList.filter((p) => p.id !== selectedPayroll.id));
       setShowDeleteModal(false);
       setSelectedPayroll(null);
+      addToast("Payroll deleted successfully!", "success");
     } catch (err) {
-      alert("Error deleting payroll: " + err.message);
+      addToast("Error deleting payroll: " + err.message, "error");
     } finally {
       setSaving(false);
     }

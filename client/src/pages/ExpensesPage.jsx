@@ -3,8 +3,10 @@ import Table from "../components/Table";
 import Modal from "../components/Modal";
 import { expensesApi } from "../services/api";
 import { expenseCategories } from "../data/mockData";
+import { useToast } from "../components/Toast";
 
 export default function Expenses() {
+  const { addToast } = useToast();
   const [expenses, setExpenses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
@@ -74,8 +76,9 @@ export default function Expenses() {
       setExpenses([newExpense, ...expenses]);
       setShowAddModal(false);
       resetForm();
+      addToast("Expense added successfully!", "success");
     } catch (err) {
-      alert("Error adding expense: " + err.message);
+      addToast("Error adding expense: " + err.message, "error");
     } finally {
       setSaving(false);
     }
@@ -103,8 +106,9 @@ export default function Expenses() {
       setShowEditModal(false);
       setSelectedExpense(null);
       resetForm();
+      addToast("Expense updated successfully!", "success");
     } catch (err) {
-      alert("Error updating expense: " + err.message);
+      addToast("Error updating expense: " + err.message, "error");
     } finally {
       setSaving(false);
     }
@@ -122,8 +126,9 @@ export default function Expenses() {
       setExpenses(expenses.filter((exp) => exp.id !== selectedExpense.id));
       setShowDeleteModal(false);
       setSelectedExpense(null);
+      addToast("Expense deleted successfully!", "success");
     } catch (err) {
-      alert("Error deleting expense: " + err.message);
+      addToast("Error deleting expense: " + err.message, "error");
     } finally {
       setSaving(false);
     }

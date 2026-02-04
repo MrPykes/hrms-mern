@@ -2,11 +2,13 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Table from "../../components/Table";
 import Modal from "../../components/Modal";
+import { useToast } from "../../components/Toast";
 import { employeesApi } from "../../services/api";
 import { departments, positions } from "../../data/mockData";
 
 export default function EmployeeList() {
   const navigate = useNavigate();
+  const { addToast } = useToast();
   const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -92,8 +94,9 @@ export default function EmployeeList() {
       setEmployees([newEmployee, ...employees]);
       setShowAddModal(false);
       resetForm();
+      addToast("Employee added successfully!", "success");
     } catch (err) {
-      alert("Error adding employee: " + err.message);
+      addToast("Error adding employee: " + err.message, "error");
     } finally {
       setSaving(false);
     }
@@ -141,8 +144,9 @@ export default function EmployeeList() {
       setShowEditModal(false);
       setSelectedEmployee(null);
       resetForm();
+      addToast("Employee updated successfully!", "success");
     } catch (err) {
-      alert("Error updating employee: " + err.message);
+      addToast("Error updating employee: " + err.message, "error");
     } finally {
       setSaving(false);
     }
@@ -160,8 +164,9 @@ export default function EmployeeList() {
       setEmployees(employees.filter((emp) => emp.id !== selectedEmployee.id));
       setShowDeleteModal(false);
       setSelectedEmployee(null);
+      addToast("Employee deleted successfully!", "success");
     } catch (err) {
-      alert("Error deleting employee: " + err.message);
+      addToast("Error deleting employee: " + err.message, "error");
     } finally {
       setSaving(false);
     }

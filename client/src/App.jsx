@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 
 // Layout
 import Layout from "./components/Layout";
+import { ToastProvider } from "./components/Toast";
 
 // Pages
 import Dashboard from "./pages/Dashboard";
@@ -19,25 +20,27 @@ import Settings from "./pages/SettingsPage";
 export default function App() {
   return (
     <BrowserRouter>
-      <Routes>
-        {/* All routes wrapped with Layout (Sidebar + Topbar) */}
-        <Route path="/" element={<Layout />}>
-          <Route index element={<Dashboard />} />
-          <Route path="employees" element={<EmployeeList />} />
-          <Route path="employees/:id" element={<EmployeeProfile />} />
-          <Route path="attendance" element={<Attendance />} />
-          <Route path="leave" element={<Leave />} />
-          <Route path="leaves" element={<Leave />} />
-          <Route path="payroll" element={<Payroll />} />
-          <Route path="expenses" element={<Expenses />} />
-          <Route path="income" element={<Income />} />
-          <Route path="reports" element={<Reports />} />
-          <Route path="settings" element={<Settings />} />
-        </Route>
+      <ToastProvider>
+        <Routes>
+          {/* All routes wrapped with Layout (Sidebar + Topbar) */}
+          <Route path="/" element={<Layout />}>
+            <Route index element={<Dashboard />} />
+            <Route path="employees" element={<EmployeeList />} />
+            <Route path="employees/:id" element={<EmployeeProfile />} />
+            <Route path="attendance" element={<Attendance />} />
+            <Route path="leave" element={<Leave />} />
+            <Route path="leaves" element={<Leave />} />
+            <Route path="payroll" element={<Payroll />} />
+            <Route path="expenses" element={<Expenses />} />
+            <Route path="income" element={<Income />} />
+            <Route path="reports" element={<Reports />} />
+            <Route path="settings" element={<Settings />} />
+          </Route>
 
-        {/* Redirect unknown routes to dashboard */}
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
+          {/* Redirect unknown routes to dashboard */}
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </ToastProvider>
     </BrowserRouter>
   );
 }

@@ -3,8 +3,10 @@ import Table from "../components/Table";
 import Modal from "../components/Modal";
 import { leavesApi, employeesApi } from "../services/api";
 import { leaveTypes } from "../data/mockData";
+import { useToast } from "../components/Toast";
 
 export default function Leave() {
+  const { addToast } = useToast();
   const [leaves, setLeaves] = useState([]);
   const [leaveBalances, setLeaveBalances] = useState([]);
   const [employees, setEmployees] = useState([]);
@@ -85,8 +87,9 @@ export default function Leave() {
       setLeaves([newLeave, ...leaves]);
       setShowRequestModal(false);
       resetForm();
+      addToast("Leave request submitted successfully!", "success");
     } catch (err) {
-      alert("Error requesting leave: " + err.message);
+      addToast("Error requesting leave: " + err.message, "error");
     } finally {
       setSaving(false);
     }
@@ -96,8 +99,9 @@ export default function Leave() {
     try {
       const updated = await leavesApi.updateStatus(leave.id, "Approved");
       setLeaves(leaves.map((l) => (l.id === leave.id ? updated : l)));
+      addToast("Leave approved successfully!", "success");
     } catch (err) {
-      alert("Error approving leave: " + err.message);
+      addToast("Error approving leave: " + err.message, "error");
     }
   };
 
@@ -105,8 +109,9 @@ export default function Leave() {
     try {
       const updated = await leavesApi.updateStatus(leave.id, "Rejected");
       setLeaves(leaves.map((l) => (l.id === leave.id ? updated : l)));
+      addToast("Leave rejected!", "warning");
     } catch (err) {
-      alert("Error rejecting leave: " + err.message);
+      addToast("Error rejecting leave: " + err.message, "error");
     }
   };
 
@@ -131,8 +136,9 @@ export default function Leave() {
       setShowEditModal(false);
       setSelectedLeave(null);
       resetForm();
+      addToast("Leave updated successfully!", "success");
     } catch (err) {
-      alert("Error updating leave: " + err.message);
+      addToast("Error updating leave: " + err.message, "error");
     } finally {
       setSaving(false);
     }
@@ -150,8 +156,9 @@ export default function Leave() {
       setLeaves(leaves.filter((l) => l.id !== selectedLeave.id));
       setShowDeleteModal(false);
       setSelectedLeave(null);
+      addToast("Leave deleted successfully!", "success");
     } catch (err) {
-      alert("Error deleting leave: " + err.message);
+      addToast("Error deleting leave: " + err.message, "error");
     } finally {
       setSaving(false);
     }

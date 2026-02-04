@@ -3,8 +3,10 @@ import Table from "../components/Table";
 import Modal from "../components/Modal";
 import { incomeApi, expensesApi } from "../services/api";
 import { incomeSources } from "../data/mockData";
+import { useToast } from "../components/Toast";
 
 export default function Income() {
+  const { addToast } = useToast();
   const [incomeList, setIncomeList] = useState([]);
   const [totalExpenses, setTotalExpenses] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -76,8 +78,9 @@ export default function Income() {
       setIncomeList([newIncome, ...incomeList]);
       setShowAddModal(false);
       resetForm();
+      addToast("Income added successfully!", "success");
     } catch (err) {
-      alert("Error adding income: " + err.message);
+      addToast("Error adding income: " + err.message, "error");
     } finally {
       setSaving(false);
     }
@@ -104,8 +107,9 @@ export default function Income() {
       setShowEditModal(false);
       setSelectedIncome(null);
       resetForm();
+      addToast("Income updated successfully!", "success");
     } catch (err) {
-      alert("Error updating income: " + err.message);
+      addToast("Error updating income: " + err.message, "error");
     } finally {
       setSaving(false);
     }
@@ -123,8 +127,9 @@ export default function Income() {
       setIncomeList(incomeList.filter((inc) => inc.id !== selectedIncome.id));
       setShowDeleteModal(false);
       setSelectedIncome(null);
+      addToast("Income deleted successfully!", "success");
     } catch (err) {
-      alert("Error deleting income: " + err.message);
+      addToast("Error deleting income: " + err.message, "error");
     } finally {
       setSaving(false);
     }

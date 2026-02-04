@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from "react";
 import Table from "../components/Table";
 import Modal from "../components/Modal";
+import { useToast } from "../components/Toast";
 import { attendanceApi, employeesApi } from "../services/api";
 
 export default function Attendance() {
+  const { addToast } = useToast();
   const [attendance, setAttendance] = useState([]);
   const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -74,8 +76,9 @@ export default function Attendance() {
       setAttendance([newRecord, ...attendance]);
       setShowAddModal(false);
       resetForm();
+      addToast("Attendance record added successfully!", "success");
     } catch (err) {
-      alert("Error adding attendance: " + err.message);
+      addToast("Error adding attendance: " + err.message, "error");
     } finally {
       setSaving(false);
     }
@@ -123,8 +126,9 @@ export default function Attendance() {
       setShowEditModal(false);
       setSelectedRecord(null);
       resetForm();
+      addToast("Attendance record updated successfully!", "success");
     } catch (err) {
-      alert("Error updating attendance: " + err.message);
+      addToast("Error updating attendance: " + err.message, "error");
     } finally {
       setSaving(false);
     }

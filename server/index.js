@@ -13,6 +13,7 @@ const leavesRoutes = require("./routes/leaves");
 const expensesRoutes = require("./routes/expenses");
 const incomeRoutes = require("./routes/income");
 const settingsRoutes = require("./routes/settings");
+const holidaysRoutes = require("./routes/holidays");
 
 const app = express();
 app.use(cors());
@@ -31,6 +32,7 @@ app.use("/api/leaves", leavesRoutes);
 app.use("/api/expenses", expensesRoutes);
 app.use("/api/income", incomeRoutes);
 app.use("/api/settings", settingsRoutes);
+app.use("/api/holidays", holidaysRoutes);
 
 // Dashboard stats endpoint
 app.get("/api/dashboard/stats", async (req, res) => {

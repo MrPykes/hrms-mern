@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const Attendance = require("../models/Attendance");
+const Leave = require("../models/Leave");
 const Employee = require("../models/Employee");
 
 // Get all attendance records
@@ -13,6 +14,9 @@ router.get("/", async (req, res) => {
       })
       .sort({ date: -1 });
 
+    // load approved leaves to mark attendance as On Leave when applicable
+    const approvedLeaves = await Leave.find({ status: "approved" });
+
     const formatted = records.map((record) => {
       const clockIn = record.clockIn ? new Date(record.clockIn) : null;
       const clockOut = record.clockOut ? new Date(record.clockOut) : null;
@@ -22,6 +26,7 @@ router.get("/", async (req, res) => {
         hoursWorked = ((clockOut - clockIn) / (1000 * 60 * 60)).toFixed(1);
       }
 
+      // default status based on clock records
       let status = "Present";
       if (!clockIn) {
         status = "Absent";
@@ -29,24 +34,42 @@ router.get("/", async (req, res) => {
         status = "Late";
       }
 
+      // check if there's an approved leave for this employee overlapping the attendance date
+      const recDate = new Date(record.date);
+      const isOnLeave = approvedLeaves.some((lv) => {
+        if (!lv.employee) return false;
+        if (lv.employee.toString() !== (record.employee?._id || "").toString()) return false;
+        const ls = new Date(lv.startDate);
+        const le = new Date(lv.endDate);
+        // normalize dates to ignore time portion
+        const d = new Date(recDate.getFullYear(), recDate.getMonth(), recDate.getDate());
+        const s = new Date(ls.getFullYear(), ls.getMonth(), ls.getDate());
+        const e = new Date(le.getFullYear(), le.getMonth(), le.getDate());
+        return d >= s && d <= e;
+      });
+
+      if (isOnLeave) {
+        status = "On Leave";
+      }
+
       return {
         id: record._id,
         employeeId: record.employee?._id,
         employeeName: record.employee?.user?.name || "Unknown",
         date: new Date(record.date).toLocaleDateString("en-US"),
-        timeIn: clockIn
+        timeIn: isOnLeave ? "-" : (clockIn
           ? clockIn.toLocaleTimeString("en-US", {
               hour: "2-digit",
               minute: "2-digit",
             })
-          : "-",
-        timeOut: clockOut
+          : "-"),
+        timeOut: isOnLeave ? "-" : (clockOut
           ? clockOut.toLocaleTimeString("en-US", {
               hour: "2-digit",
               minute: "2-digit",
             })
-          : "-",
-        hoursWorked: parseFloat(hoursWorked) || 0,
+          : "-"),
+        hoursWorked: isOnLeave ? 0 : (parseFloat(hoursWorked) || 0),
         status,
         lateMinutes: record.lateMinutes,
         overtimeMinutes: record.overtimeMinutes,

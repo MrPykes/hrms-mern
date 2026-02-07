@@ -463,6 +463,8 @@ export default function Leave() {
           leaveTypes={leaveTypes}
           requestedDays={computeRequestedDays(formData.startDate, formData.endDate)}
           remaining={getRemainingFor(formData.employeeId, formData.leaveType)}
+          originalDays={selectedLeave?.days}
+          leaveStatus={selectedLeave?.status}
         />
       </Modal>
 

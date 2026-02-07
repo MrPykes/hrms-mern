@@ -11,8 +11,13 @@ export default function LeaveForm({
   leaveTypes,
   remaining,
   requestedDays,
+  originalDays,
+  leaveStatus,
 }) {
   const exceeds = typeof remaining === 'number' && requestedDays > remaining;
+  const hasOriginal = typeof originalDays === 'number' && !isNaN(originalDays);
+  const netChange = hasOriginal ? requestedDays - originalDays : null;
+  const exceedsEdit = hasOriginal && leaveStatus === 'Approved' && netChange > remaining;
 
   return (
     <form
@@ -58,10 +63,20 @@ export default function LeaveForm({
           ))}
         </select>
         {typeof remaining === 'number' && (
-          <p className={`text-sm mt-1 ${exceeds ? 'text-red-600' : 'text-gray-500'}`}>
-            Remaining: {remaining} day{remaining !== 1 ? 's' : ''}
-            {exceeds && ' — requested exceeds remaining'}
-          </p>
+          <div className="mt-1">
+            <p className={`text-sm ${exceeds || exceedsEdit ? 'text-red-600' : 'text-gray-500'}`}>
+              Requested: {requestedDays} day{requestedDays !== 1 ? 's' : ''}. Remaining: {remaining} day{remaining !== 1 ? 's' : ''}.
+            </p>
+            {exceeds && (
+              <p className="text-sm text-red-600">You are exceeding the available balance by {requestedDays - remaining} day{requestedDays - remaining !== 1 ? 's' : ''}.</p>
+            )}
+            {exceedsEdit && (
+              <p className="text-sm text-red-600">This approved leave update increases used days by {netChange} and will exceed remaining by {netChange - remaining} day{netChange - remaining !== 1 ? 's' : ''}.</p>
+            )}
+            {hasOriginal && !exceedsEdit && (
+              <p className="text-sm text-gray-500">Original days: {originalDays}. Net change: {netChange >= 0 ? `+${netChange}` : netChange}.</p>
+            )}
+          </div>
         )}
       </div>
       <div className="grid grid-cols-2 gap-4">
@@ -117,7 +132,7 @@ export default function LeaveForm({
         </button>
         <button
           type="submit"
-          disabled={saving || exceeds}
+          disabled={saving || exceeds || exceedsEdit}
           className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
         >
           {saving && (

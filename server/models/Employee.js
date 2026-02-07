@@ -40,7 +40,7 @@ const employeeSchema = new mongoose.Schema(
     },
     files: [{ filename: String, path: String, uploadedAt: Date }],
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 module.exports = mongoose.model("Employee", employeeSchema);

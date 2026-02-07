@@ -62,6 +62,13 @@ export const leavesApi = {
   delete: (id) => apiCall(`/leaves/${id}`, { method: "DELETE" }),
 };
 
+// Settings
+export const settingsApi = {
+  getAll: () => apiCall("/settings"),
+  getLeavePolicy: () => apiCall("/settings/leave"),
+  updateLeavePolicy: (policy) => apiCall("/settings/leave", { method: "PUT", body: policy }),
+};
+
 // Expenses
 export const expensesApi = {
   getAll: () => apiCall("/expenses"),

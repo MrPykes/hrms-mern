@@ -1,5 +1,7 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { companyInfo } from "../data/mockData";
+import { settingsApi } from "../services/api";
+import { useToast } from "../components/Toast";
 
 export default function Settings() {
   const [activeTab, setActiveTab] = useState("company");
@@ -8,7 +10,26 @@ export default function Settings() {
     { id: "company", name: "Company Information" },
     { id: "payroll", name: "Payroll Settings" },
     { id: "users", name: "User Management" },
+    { id: "leaves", name: "Leave Balances" },
   ];
+
+  const { addToast } = useToast();
+  const [leavePolicy, setLeavePolicy] = useState({
+    annualVacation: 15,
+    annualSick: 15,
+    annualEmergency: 3,
+  });
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const policy = await settingsApi.getLeavePolicy();
+        if (policy) setLeavePolicy(policy);
+      } catch (err) {
+        // ignore — keep defaults
+      }
+    })();
+  }, []);
 
   const users = [
     {
@@ -254,6 +275,67 @@ export default function Settings() {
               <div className="flex justify-end">
                 <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
                   Save Changes
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Leave Balances Tab */}
+          {activeTab === "leaves" && (
+            <div className="space-y-6">
+              <div>
+                <h3 className="text-lg font-semibold text-gray-800 mb-4">
+                  Leave Balances Policy
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Annual Vacation Days
+                    </label>
+                    <input
+                      type="number"
+                      value={leavePolicy.annualVacation}
+                      onChange={(e) => setLeavePolicy((p) => ({ ...p, annualVacation: parseFloat(e.target.value) || 0 }))}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Annual Sick Days
+                    </label>
+                    <input
+                      type="number"
+                      value={leavePolicy.annualSick}
+                      onChange={(e) => setLeavePolicy((p) => ({ ...p, annualSick: parseFloat(e.target.value) || 0 }))}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Annual Emergency Days
+                    </label>
+                    <input
+                      type="number"
+                      value={leavePolicy.annualEmergency}
+                      onChange={(e) => setLeavePolicy((p) => ({ ...p, annualEmergency: parseFloat(e.target.value) || 0 }))}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    />
+                  </div>
+                </div>
+              </div>
+              <div className="flex justify-end">
+                <button
+                  onClick={async () => {
+                    try {
+                      await settingsApi.updateLeavePolicy(leavePolicy);
+                      addToast('Leave policy saved', 'success');
+                    } catch (err) {
+                      addToast('Error saving leave policy: ' + err.message, 'error');
+                    }
+                  }}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                >
+                  Save Leave Policy
                 </button>
               </div>
             </div>

@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 const Leave = require("../models/Leave");
 const Employee = require("../models/Employee");
+const Setting = require("../models/Setting");
 
 // Get all leave requests
 router.get("/", async (req, res) => {
@@ -46,32 +47,81 @@ router.get("/balances", async (req, res) => {
       "employment.status": "active",
     }).populate("user", "name");
 
-    // Calculate used leaves per employee
-    const leaves = await Leave.find({ status: "approved" });
-    const usedLeaves = {};
+    // Dynamic calculation per current year.
+    // Policy: annual entitlements (per year) and prorate based on employment start within the year.
+    // Load policy from settings if available
+    const defaultPolicy = { annualVacation: 15, annualSick: 15, annualEmergency: 3 };
+    const policySetting = await Setting.findOne({ key: 'leavePolicy' });
+    const policy = policySetting ? policySetting.value : defaultPolicy;
+    const ANNUAL_VACATION = policy.annualVacation ?? defaultPolicy.annualVacation;
+    const ANNUAL_SICK = policy.annualSick ?? defaultPolicy.annualSick;
+    const ANNUAL_EMERGENCY = policy.annualEmergency ?? defaultPolicy.annualEmergency;
 
-    leaves.forEach((leave) => {
+    const now = new Date();
+    const yearStart = new Date(now.getFullYear(), 0, 1);
+    const yearEnd = new Date(now.getFullYear(), 11, 31, 23, 59, 59);
+
+    // fetch approved leaves for the current year only to compute used days in the year
+    const approvedLeaves = await Leave.find({ status: "approved" });
+
+    // helper to compute overlap days between two date ranges (inclusive)
+    const daysOverlap = (aStart, aEnd, bStart, bEnd) => {
+      const start = aStart > bStart ? aStart : bStart;
+      const end = aEnd < bEnd ? aEnd : bEnd;
+      if (end < start) return 0;
+      const diff = Math.ceil((end - start) / (1000 * 60 * 60 * 24)) + 1;
+      return diff;
+    };
+
+    // aggregate used days per employee for current year
+    const usedThisYear = {};
+    approvedLeaves.forEach((leave) => {
       const empId = leave.employee.toString();
-      if (!usedLeaves[empId]) {
-        usedLeaves[empId] = { vacation: 0, sick: 0, emergency: 0 };
-      }
-      if (leave.type === "Vacation") usedLeaves[empId].vacation += leave.days;
-      if (leave.type === "Sick") usedLeaves[empId].sick += leave.days;
-      if (leave.type === "Unpaid") usedLeaves[empId].emergency += leave.days;
+      const leaveStart = new Date(leave.startDate);
+      const leaveEnd = new Date(leave.endDate);
+      const overlapDays = daysOverlap(leaveStart, leaveEnd, yearStart, yearEnd);
+      if (overlapDays <= 0) return; // no days this year
+      if (!usedThisYear[empId]) usedThisYear[empId] = { vacation: 0, sick: 0, emergency: 0 };
+      if (leave.type === "Vacation") usedThisYear[empId].vacation += overlapDays;
+      if (leave.type === "Sick") usedThisYear[empId].sick += overlapDays;
+      if (leave.type === "Unpaid") usedThisYear[empId].emergency += overlapDays;
     });
 
     const balances = employees.map((emp) => {
-      const used = usedLeaves[emp._id.toString()] || {
-        vacation: 0,
-        sick: 0,
-        emergency: 0,
-      };
+      const hire = emp.employment?.hireDate ? new Date(emp.employment.hireDate) : null;
+      // determine start date for entitlement this year (either hire date or year start)
+      const entitlementStart = hire && hire > yearStart ? hire : yearStart;
+      // if hire is in future, no entitlement
+      if (hire && hire > now) {
+        return {
+          employeeId: emp._id,
+          employeeName: emp.user?.name || "Unknown",
+          vacationLeave: 0,
+          sickLeave: 0,
+          emergencyLeave: 0,
+        };
+      }
+
+      // months employed in current year (approx using days/30)
+      const daysEmployedThisYear = Math.max(0, Math.ceil((now - entitlementStart) / (1000 * 60 * 60 * 24)) + 1);
+      const monthsEmployedThisYear = Math.min(12, daysEmployedThisYear / 30);
+
+      const entitlementVacation = (ANNUAL_VACATION * monthsEmployedThisYear) / 12;
+      const entitlementSick = (ANNUAL_SICK * monthsEmployedThisYear) / 12;
+      const entitlementEmergency = (ANNUAL_EMERGENCY * monthsEmployedThisYear) / 12;
+
+      const used = usedThisYear[emp._id.toString()] || { vacation: 0, sick: 0, emergency: 0 };
+
+      const availVacation = Math.max(0, Math.round((entitlementVacation - used.vacation) * 10) / 10);
+      const availSick = Math.max(0, Math.round((entitlementSick - used.sick) * 10) / 10);
+      const availEmergency = Math.max(0, Math.round((entitlementEmergency - used.emergency) * 10) / 10);
+
       return {
         employeeId: emp._id,
         employeeName: emp.user?.name || "Unknown",
-        vacationLeave: Math.max(0, 15 - used.vacation),
-        sickLeave: Math.max(0, 15 - used.sick),
-        emergencyLeave: Math.max(0, 3 - used.emergency),
+        vacationLeave: availVacation,
+        sickLeave: availSick,
+        emergencyLeave: availEmergency,
       };
     });
 

@@ -67,6 +67,25 @@ export default function Leave() {
     });
   };
 
+  const computeRequestedDays = (startStr, endStr) => {
+    if (!startStr || !endStr) return 0;
+    const start = new Date(startStr);
+    const end = new Date(endStr);
+    if (isNaN(start) || isNaN(end) || end < start) return 0;
+    const diff = Math.ceil((end - start) / (1000 * 60 * 60 * 24)) + 1;
+    return diff;
+  };
+
+  const getRemainingFor = (employeeId, leaveType) => {
+    if (!employeeId) return null;
+    const b = leaveBalances.find((lb) => String(lb.employeeId) === String(employeeId));
+    if (!b) return null;
+    if (leaveType === "Vacation Leave") return b.vacationLeave;
+    if (leaveType === "Sick Leave") return b.sickLeave;
+    if (leaveType === "Emergency Leave") return b.emergencyLeave;
+    return null;
+  };
+
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     if (name === "employeeId") {
@@ -416,6 +435,8 @@ export default function Leave() {
           saving={saving}
           employees={employees}
           leaveTypes={leaveTypes}
+          requestedDays={computeRequestedDays(formData.startDate, formData.endDate)}
+          remaining={getRemainingFor(formData.employeeId, formData.leaveType)}
         />
       </Modal>
 
@@ -440,6 +461,8 @@ export default function Leave() {
           saving={saving}
           employees={employees}
           leaveTypes={leaveTypes}
+          requestedDays={computeRequestedDays(formData.startDate, formData.endDate)}
+          remaining={getRemainingFor(formData.employeeId, formData.leaveType)}
         />
       </Modal>
 

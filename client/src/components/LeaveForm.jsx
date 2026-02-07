@@ -9,7 +9,11 @@ export default function LeaveForm({
   saving,
   employees,
   leaveTypes,
+  remaining,
+  requestedDays,
 }) {
+  const exceeds = typeof remaining === 'number' && requestedDays > remaining;
+
   return (
     <form
       className="space-y-4"
@@ -53,6 +57,12 @@ export default function LeaveForm({
             </option>
           ))}
         </select>
+        {typeof remaining === 'number' && (
+          <p className={`text-sm mt-1 ${exceeds ? 'text-red-600' : 'text-gray-500'}`}>
+            Remaining: {remaining} day{remaining !== 1 ? 's' : ''}
+            {exceeds && ' — requested exceeds remaining'}
+          </p>
+        )}
       </div>
       <div className="grid grid-cols-2 gap-4">
         <div>
@@ -107,7 +117,7 @@ export default function LeaveForm({
         </button>
         <button
           type="submit"
-          disabled={saving}
+          disabled={saving || exceeds}
           className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
         >
           {saving && (

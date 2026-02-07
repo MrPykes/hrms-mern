@@ -62,6 +62,13 @@ export const leavesApi = {
   delete: (id) => apiCall(`/leaves/${id}`, { method: "DELETE" }),
 };
 
+// Holidays
+export const holidaysApi = {
+  getAll: () => apiCall('/holidays'),
+  create: (data) => apiCall('/holidays', { method: 'POST', body: data }),
+  delete: (id) => apiCall(`/holidays/${id}`, { method: 'DELETE' }),
+};
+
 // Settings
 export const settingsApi = {
   getAll: () => apiCall("/settings"),

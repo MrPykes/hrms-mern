@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { companyInfo } from "../data/mockData";
-import { settingsApi } from "../services/api";
+import { settingsApi, holidaysApi } from "../services/api";
 import { useToast } from "../components/Toast";
 
 export default function Settings() {
@@ -11,6 +11,7 @@ export default function Settings() {
     { id: "payroll", name: "Payroll Settings" },
     { id: "users", name: "User Management" },
     { id: "leaves", name: "Leave Balances" },
+    { id: "holidays", name: "Holidays" },
   ];
 
   const { addToast } = useToast();
@@ -30,6 +31,49 @@ export default function Settings() {
       }
     })();
   }, []);
+
+  // Holidays manager
+  const [holidays, setHolidays] = useState([]);
+  const [holidayForm, setHolidayForm] = useState({ name: '', date: '', type: 'regular', manualOverride: false });
+  const [loadingHolidays, setLoadingHolidays] = useState(false);
+
+  const fetchHolidays = async () => {
+    try {
+      setLoadingHolidays(true);
+      const data = await holidaysApi.getAll();
+      setHolidays(data);
+    } catch (err) {
+      console.error('Error loading holidays:', err);
+    } finally {
+      setLoadingHolidays(false);
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab === 'holidays') fetchHolidays();
+  }, [activeTab]);
+
+  const createHoliday = async () => {
+    try {
+      await holidaysApi.create(holidayForm);
+      setHolidayForm({ name: '', date: '', type: 'regular', manualOverride: false });
+      addToast('Holiday created', 'success');
+      fetchHolidays();
+    } catch (err) {
+      addToast('Error creating holiday: ' + err.message, 'error');
+    }
+  };
+
+  const deleteHoliday = async (id) => {
+    if (!confirm('Delete this holiday?')) return;
+    try {
+      await holidaysApi.delete(id);
+      addToast('Holiday deleted', 'success');
+      fetchHolidays();
+    } catch (err) {
+      addToast('Error deleting holiday: ' + err.message, 'error');
+    }
+  };
 
   const users = [
     {
@@ -337,6 +381,75 @@ export default function Settings() {
                 >
                   Save Leave Policy
                 </button>
+              </div>
+            </div>
+          )}
+
+          {/* Holidays Tab */}
+          {activeTab === "holidays" && (
+            <div className="space-y-6">
+              <div>
+                <h3 className="text-lg font-semibold text-gray-800 mb-4">
+                  Holidays
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
+                    <input type="text" value={holidayForm.name} onChange={(e) => setHolidayForm(h => ({...h, name: e.target.value}))} className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
+                    <input type="date" value={holidayForm.date} onChange={(e) => setHolidayForm(h => ({...h, date: e.target.value}))} className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
+                    <select value={holidayForm.type} onChange={(e) => setHolidayForm(h => ({...h, type: e.target.value}))} className="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                      <option value="regular">Regular</option>
+                      <option value="special">Special</option>
+                      <option value="local">Local</option>
+                    </select>
+                  </div>
+                </div>
+                <div className="flex items-center gap-4 mt-4">
+                  <label className="inline-flex items-center">
+                    <input type="checkbox" checked={holidayForm.manualOverride} onChange={(e) => setHolidayForm(h => ({...h, manualOverride: e.target.checked}))} className="mr-2" />
+                    Manual Override
+                  </label>
+                  <div className="flex-1" />
+                  <button onClick={createHoliday} className="px-4 py-2 bg-blue-600 text-white rounded-lg">Create Holiday</button>
+                </div>
+
+                <div className="mt-6">
+                  <h4 className="text-md font-semibold mb-2">Existing Holidays</h4>
+                  {loadingHolidays ? (
+                    <div>Loading...</div>
+                  ) : (
+                    <div className="overflow-x-auto">
+                      <table className="min-w-full">
+                        <thead>
+                          <tr className="border-b border-gray-200">
+                            <th className="text-left py-2 text-sm font-medium text-gray-500">Name</th>
+                            <th className="text-left py-2 text-sm font-medium text-gray-500">Date</th>
+                            <th className="text-left py-2 text-sm font-medium text-gray-500">Type</th>
+                            <th className="text-right py-2 text-sm font-medium text-gray-500">Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {holidays.map(h => (
+                            <tr key={h.id} className="border-b border-gray-100">
+                              <td className="py-3">{h.name}</td>
+                              <td className="py-3">{new Date(h.date).toLocaleDateString()}</td>
+                              <td className="py-3">{h.type}</td>
+                              <td className="py-3 text-right">
+                                <button onClick={() => deleteHoliday(h.id)} className="px-3 py-1 bg-red-600 text-white rounded-lg">Delete</button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           )}

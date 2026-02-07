@@ -87,10 +87,9 @@ router.get("/balances", async (req, res) => {
       if (leave.type === "Unpaid") usedThisYear[empId].emergency += overlapDays;
     });
 
+    // Use full annual entitlements from settings (no prorating), subtract approved used days in current year
     const balances = employees.map((emp) => {
       const hire = emp.employment?.hireDate ? new Date(emp.employment.hireDate) : null;
-      // determine start date for entitlement this year (either hire date or year start)
-      const entitlementStart = hire && hire > yearStart ? hire : yearStart;
       // if hire is in future, no entitlement
       if (hire && hire > now) {
         return {
@@ -102,13 +101,9 @@ router.get("/balances", async (req, res) => {
         };
       }
 
-      // months employed in current year (approx using days/30)
-      const daysEmployedThisYear = Math.max(0, Math.ceil((now - entitlementStart) / (1000 * 60 * 60 * 24)) + 1);
-      const monthsEmployedThisYear = Math.min(12, daysEmployedThisYear / 30);
-
-      const entitlementVacation = (ANNUAL_VACATION * monthsEmployedThisYear) / 12;
-      const entitlementSick = (ANNUAL_SICK * monthsEmployedThisYear) / 12;
-      const entitlementEmergency = (ANNUAL_EMERGENCY * monthsEmployedThisYear) / 12;
+      const entitlementVacation = ANNUAL_VACATION;
+      const entitlementSick = ANNUAL_SICK;
+      const entitlementEmergency = ANNUAL_EMERGENCY;
 
       const used = usedThisYear[emp._id.toString()] || { vacation: 0, sick: 0, emergency: 0 };
 

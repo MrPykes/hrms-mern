@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import Table from "../components/Table";
 import Modal from "../components/Modal";
 import { useToast } from "../components/Toast";
-import { attendanceApi, employeesApi } from "../services/api";
+import { attendanceApi, employeesApi, leavesApi } from "../services/api";
 
 export default function Attendance() {
   const { addToast } = useToast();
@@ -14,6 +14,7 @@ export default function Attendance() {
   const [selectedRecord, setSelectedRecord] = useState(null);
   const [selectedStatus, setSelectedStatus] = useState("");
   const [saving, setSaving] = useState(false);
+  const [isOnLeave, setIsOnLeave] = useState(false);
 
   const [formData, setFormData] = useState({
     employeeId: "",
@@ -53,19 +54,62 @@ export default function Attendance() {
       timeOut: "",
       status: "Present",
     });
+    setIsOnLeave(false);
   };
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     if (name === "employeeId") {
       const emp = employees.find((e) => e.id === value);
-      setFormData((prev) => ({
-        ...prev,
+      const newData = {
+        ...formData,
         employeeId: value,
         employeeName: emp ? `${emp.firstName} ${emp.lastName}` : "",
-      }));
+      };
+      setFormData(newData);
+      checkIfOnLeave(newData.employeeId, newData.date);
+    } else if (name === "date") {
+      const newData = { ...formData, date: value };
+      setFormData(newData);
+      checkIfOnLeave(newData.employeeId, newData.date);
     } else {
       setFormData((prev) => ({ ...prev, [name]: value }));
+    }
+  };
+
+  const checkIfOnLeave = async (employeeId, date) => {
+    if (!employeeId || !date) {
+      setIsOnLeave(false);
+      return false;
+    }
+    try {
+      const leaves = await leavesApi.getAll();
+      const target = new Date(date);
+      const onLeave = leaves.some((lv) => {
+        const status = (lv.status || '').toLowerCase();
+        if (status !== 'approved') return false;
+        if (!lv.employeeId && !lv.employee) return false;
+        const lvEmpId = lv.employeeId || (lv.employee && lv.employee._id) || lv.employee;
+        if (!lvEmpId) return false;
+        if (String(lvEmpId) !== String(employeeId)) return false;
+        const s = new Date(lv.startDate);
+        const e = new Date(lv.endDate);
+        const d = new Date(target.getFullYear(), target.getMonth(), target.getDate());
+        const ss = new Date(s.getFullYear(), s.getMonth(), s.getDate());
+        const ee = new Date(e.getFullYear(), e.getMonth(), e.getDate());
+        return d >= ss && d <= ee;
+      });
+      setIsOnLeave(onLeave);
+      if (onLeave) {
+        setFormData((prev) => ({ ...prev, status: 'On Leave' }));
+      } else if (formData.status === 'On Leave') {
+        setFormData((prev) => ({ ...prev, status: 'Present' }));
+      }
+      return onLeave;
+    } catch (err) {
+      console.error('Error checking leave:', err);
+      setIsOnLeave(false);
+      return false;
     }
   };
 
@@ -90,15 +134,17 @@ export default function Attendance() {
       record.timeIn !== "-" ? convertTo24Hour(record.timeIn) : "";
     const timeOut24 =
       record.timeOut !== "-" ? convertTo24Hour(record.timeOut) : "";
-    setFormData({
+    const newData = {
       employeeId: record.employeeId,
       employeeName: record.employeeName,
       date: formatDateForInput(record.date),
       timeIn: timeIn24,
       timeOut: timeOut24,
       status: record.status,
-    });
+    };
+    setFormData(newData);
     setShowEditModal(true);
+    checkIfOnLeave(newData.employeeId, newData.date);
   };
 
   const formatDateForInput = (dateStr) => {
@@ -182,7 +228,9 @@ export default function Attendance() {
               ? "bg-green-100 text-green-700"
               : value === "Late"
                 ? "bg-yellow-100 text-yellow-700"
-                : "bg-red-100 text-red-700"
+                : value === "On Leave"
+                  ? "bg-blue-100 text-blue-700"
+                  : "bg-red-100 text-red-700"
           }`}
         >
           {value}
@@ -258,13 +306,15 @@ export default function Attendance() {
           value={formData.status}
           onChange={handleInputChange}
           className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+          disabled={isOnLeave}
         >
           <option value="Present">Present</option>
           <option value="Late">Late</option>
           <option value="Absent">Absent</option>
+          <option value="On Leave">On Leave</option>
         </select>
       </div>
-      {formData.status !== "Absent" && (
+      {formData.status !== "Absent" && !isOnLeave && (
         <div className="grid grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">

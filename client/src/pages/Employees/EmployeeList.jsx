@@ -27,6 +27,7 @@ export default function EmployeeList() {
     department: "Engineering",
     position: "Software Engineer",
     hireDate: "",
+    birthDate: "",
     salary: "",
     phone: "",
     address: "",
@@ -35,6 +36,8 @@ export default function EmployeeList() {
     pagibig: "",
     tin: "",
     employmentType: "regular",
+    status: "Active",
+    allowances: "",
   });
 
   useEffect(() => {
@@ -71,6 +74,7 @@ export default function EmployeeList() {
       department: "Engineering",
       position: "Software Engineer",
       hireDate: "",
+      birthDate: "",
       salary: "",
       phone: "",
       address: "",
@@ -79,6 +83,8 @@ export default function EmployeeList() {
       pagibig: "",
       tin: "",
       employmentType: "regular",
+      status: "Active",
+      allowances: "",
     });
   };
 
@@ -111,7 +117,9 @@ export default function EmployeeList() {
       department: employee.department || "Engineering",
       position: employee.position || "Software Engineer",
       hireDate: employee.hireDate ? formatDateForInput(employee.hireDate) : "",
+      birthDate: employee.birthDate ? formatDateForInput(employee.birthDate) : "",
       salary: employee.salary?.toString() || "",
+      allowances: employee.allowances?.toString() || "",
       phone: employee.phone || "",
       address: employee.address || "",
       sss: employee.sss || "",
@@ -119,6 +127,7 @@ export default function EmployeeList() {
       pagibig: employee.pagibig || "",
       tin: employee.tin || "",
       employmentType: employee.employmentType || "regular",
+      status: employee.status || "Active",
     });
     setShowEditModal(true);
   };
@@ -357,6 +366,58 @@ export default function EmployeeList() {
             onChange={handleInputChange}
             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
           />
+        </div>
+      </div>
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Birth Date</label>
+          <input
+            type="date"
+            name="birthDate"
+            value={formData.birthDate}
+            onChange={handleInputChange}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Allowances (₱)</label>
+          <input
+            type="number"
+            name="allowances"
+            value={formData.allowances}
+            onChange={handleInputChange}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+          />
+        </div>
+      </div>
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Employment Type</label>
+          <select
+            name="employmentType"
+            value={formData.employmentType}
+            onChange={handleInputChange}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+          >
+            <option value="regular">Regular</option>
+            <option value="probationary">Probationary</option>
+            <option value="contractual">Contractual</option>
+            <option value="trainee">Trainee</option>
+          </select>
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+          <select
+            name="status"
+            value={formData.status}
+            onChange={handleInputChange}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+          >
+            <option value="Active">Active</option>
+            <option value="Resigned">Resigned</option>
+            <option value="Terminated">Terminated</option>
+            <option value="Inactive">Inactive</option>
+          </select>
         </div>
       </div>
       <div>

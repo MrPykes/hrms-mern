@@ -19,11 +19,22 @@ router.get("/", async (req, res) => {
       lastName: emp.user?.name?.split(" ").slice(1).join(" ") || "",
       department: emp.employment?.department || "General",
       position: emp.user?.role || "Employee",
-      status: emp.employment?.status === "active" ? "Active" : "Inactive",
-      hireDate: emp.employment?.hireDate
-        ? new Date(emp.employment.hireDate).toLocaleDateString("en-US")
-        : "",
-      salary: emp.salary?.basic || 0,
+        status:
+          emp.employment?.status === "active"
+            ? "Active"
+            : emp.employment?.status === "resigned"
+            ? "Resigned"
+            : emp.employment?.status === "terminated"
+            ? "Terminated"
+            : "Inactive",
+        hireDate: emp.employment?.hireDate
+          ? new Date(emp.employment.hireDate).toLocaleDateString("en-US")
+          : "",
+        salary: emp.salary?.basic || 0,
+        allowances: emp.salary?.allowances || 0,
+        birthDate: emp.personal?.birthdate
+          ? new Date(emp.personal.birthdate).toLocaleDateString("en-US")
+          : "",
       phone: emp.personal?.phone || "",
       address: emp.personal?.address || "",
       sss: emp.statutory?.sss || "",
@@ -59,9 +70,20 @@ router.get("/:id", async (req, res) => {
       email: employee.user?.email || "",
       department: employee.employment?.department || "General",
       position: employee.user?.role || "Employee",
-      status: employee.employment?.status === "active" ? "Active" : "Inactive",
-      hireDate: employee.employment?.hireDate,
-      salary: employee.salary?.basic || 0,
+        status:
+          employee.employment?.status === "active"
+            ? "Active"
+            : employee.employment?.status === "resigned"
+            ? "Resigned"
+            : employee.employment?.status === "terminated"
+            ? "Terminated"
+            : "Inactive",
+        hireDate: employee.employment?.hireDate,
+        salary: employee.salary?.basic || 0,
+        allowances: employee.salary?.allowances || 0,
+        birthDate: employee.personal?.birthdate
+          ? new Date(employee.personal.birthdate).toLocaleDateString("en-US")
+          : "",
       phone: employee.personal?.phone || "",
       address: employee.personal?.address || "",
       sss: employee.statutory?.sss || "",
@@ -85,7 +107,9 @@ router.post("/", async (req, res) => {
       department,
       position,
       hireDate,
+      birthDate,
       salary,
+      allowances,
       phone,
       address,
       sss,
@@ -117,6 +141,7 @@ router.post("/", async (req, res) => {
       personal: {
         phone,
         address,
+        ...(birthDate ? { birthdate: new Date(birthDate) } : {}),
       },
       employment: {
         type: employmentType || "regular",
@@ -133,6 +158,7 @@ router.post("/", async (req, res) => {
       salary: {
         payType: "monthly",
         basic: parseFloat(salary) || 0,
+        allowances: parseFloat(allowances) || 0,
       },
     });
     await employee.save();
@@ -145,8 +171,12 @@ router.post("/", async (req, res) => {
       department,
       position,
       status: "Active",
-      hireDate: employee.employment.hireDate.toLocaleDateString("en-US"),
-      salary: employee.salary.basic,
+        hireDate: employee.employment.hireDate.toLocaleDateString("en-US"),
+        salary: employee.salary.basic,
+        allowances: employee.salary.allowances || 0,
+        birthDate: employee.personal?.birthdate
+          ? new Date(employee.personal.birthdate).toLocaleDateString("en-US")
+          : "",
       phone,
       address,
       sss,
@@ -171,6 +201,8 @@ router.put("/:id", async (req, res) => {
       department,
       position,
       status,
+      birthDate,
+      allowances,
       hireDate,
       salary,
       phone,
@@ -194,19 +226,35 @@ router.put("/:id", async (req, res) => {
       role: position,
     });
 
-    // Update employee
-    employee.personal = { phone, address };
+    // Update personal - preserve existing values where not provided
+    employee.personal = {
+      ...employee.personal,
+      phone: phone || employee.personal?.phone,
+      address: address || employee.personal?.address,
+      ...(birthDate ? { birthdate: new Date(birthDate) } : {}),
+    };
+
+    // Employment updates - preserve existing values unless provided
     employee.employment = {
       ...employee.employment,
-      type: employmentType || "regular",
-      hireDate: hireDate ? new Date(hireDate) : employee.employment.hireDate,
-      status: status === "Active" ? "active" : "resigned",
-      department,
+      type: employmentType || employee.employment?.type || "regular",
+      hireDate: hireDate ? new Date(hireDate) : employee.employment?.hireDate,
+      department: department || employee.employment?.department,
     };
+
+    // Only update status if explicitly provided to avoid clearing it
+    if (typeof status !== "undefined") {
+      const s = String(status).toLowerCase();
+      if (s === "active") employee.employment.status = "active";
+      else if (s === "resigned" || s === "inactive") employee.employment.status = "resigned";
+      else if (s === "terminated") employee.employment.status = "terminated";
+    }
+
     employee.statutory = { sss, philhealth, pagibig, tin };
     employee.salary = {
       payType: "monthly",
-      basic: parseFloat(salary) || 0,
+      basic: parseFloat(salary) || employee.salary?.basic || 0,
+      allowances: parseFloat(allowances) || employee.salary?.allowances || 0,
     };
     await employee.save();
 
@@ -217,9 +265,13 @@ router.put("/:id", async (req, res) => {
       email,
       department,
       position,
-      status,
+      status: typeof status !== 'undefined' ? status : (employee.employment?.status === 'active' ? 'Active' : 'Resigned'),
       hireDate: employee.employment.hireDate.toLocaleDateString("en-US"),
       salary: employee.salary.basic,
+      allowances: employee.salary.allowances || 0,
+      birthDate: employee.personal?.birthdate
+        ? new Date(employee.personal.birthdate).toLocaleDateString("en-US")
+        : "",
       phone,
       address,
       sss,

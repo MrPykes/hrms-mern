@@ -36,6 +36,7 @@ const employeeSchema = new mongoose.Schema(
         default: "monthly",
       },
       basic: { type: Number, default: 0 },
+      allowances: { type: Number, default: 0 },
     },
     files: [{ filename: String, path: String, uploadedAt: Date }],
   },

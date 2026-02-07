@@ -2,6 +2,8 @@ const express = require("express");
 const router = express.Router();
 const Attendance = require("../models/Attendance");
 const Leave = require("../models/Leave");
+const Holiday = require("../models/Holiday");
+const Holiday = require("../models/Holiday");
 const Employee = require("../models/Employee");
 
 // Get all attendance records
@@ -14,8 +16,11 @@ router.get("/", async (req, res) => {
       })
       .sort({ date: -1 });
 
-    // load approved leaves to mark attendance as On Leave when applicable
-    const approvedLeaves = await Leave.find({ status: "approved" });
+    // load approved leaves and holidays to mark attendance appropriately
+    const [approvedLeaves, holidays] = await Promise.all([
+      Leave.find({ status: "approved" }),
+      Holiday.find(),
+    ]);
 
     const formatted = records.map((record) => {
       const clockIn = record.clockIn ? new Date(record.clockIn) : null;
@@ -50,13 +55,23 @@ router.get("/", async (req, res) => {
 
       if (isOnLeave) {
         status = "On Leave";
+      } else {
+        // if not on leave, check holidays for this date (global)
+        const isHoliday = holidays.some((h) => {
+          if (!h || !h.date) return false;
+          const hd = new Date(h.date);
+          const d = new Date(recDate.getFullYear(), recDate.getMonth(), recDate.getDate());
+          const hh = new Date(hd.getFullYear(), hd.getMonth(), hd.getDate());
+          return d.getTime() === hh.getTime();
+        });
+        if (isHoliday) status = "Holiday";
       }
 
       return {
         id: record._id,
         employeeId: record.employee?._id,
         employeeName: record.employee?.user?.name || "Unknown",
-        date: new Date(record.date).toLocaleDateString("en-US"),
+            // load approved leaves and holidays to mark attendance appropriately
         timeIn: isOnLeave ? "-" : (clockIn
           ? clockIn.toLocaleTimeString("en-US", {
               hour: "2-digit",

@@ -50,6 +50,15 @@ export default function Leave() {
     }
   };
 
+  const refreshBalances = async () => {
+    try {
+      const balancesData = await leavesApi.getBalances();
+      setLeaveBalances(balancesData);
+    } catch (err) {
+      console.error("Error refreshing balances:", err);
+    }
+  };
+
   const formatDateForInput = (dateStr) => {
     if (!dateStr) return "";
     const [month, day, year] = dateStr.split("/");
@@ -107,6 +116,7 @@ export default function Leave() {
       setLeaves([newLeave, ...leaves]);
       setShowRequestModal(false);
       resetForm();
+      await refreshBalances();
       addToast("Leave request submitted successfully!", "success");
     } catch (err) {
       addToast("Error requesting leave: " + err.message, "error");
@@ -119,6 +129,7 @@ export default function Leave() {
     try {
       const updated = await leavesApi.updateStatus(leave.id, "Approved");
       setLeaves(leaves.map((l) => (l.id === leave.id ? updated : l)));
+      await refreshBalances();
       addToast("Leave approved successfully!", "success");
     } catch (err) {
       addToast("Error approving leave: " + err.message, "error");
@@ -129,6 +140,7 @@ export default function Leave() {
     try {
       const updated = await leavesApi.updateStatus(leave.id, "Rejected");
       setLeaves(leaves.map((l) => (l.id === leave.id ? updated : l)));
+      await refreshBalances();
       addToast("Leave rejected!", "warning");
     } catch (err) {
       addToast("Error rejecting leave: " + err.message, "error");
@@ -156,6 +168,7 @@ export default function Leave() {
       setShowEditModal(false);
       setSelectedLeave(null);
       resetForm();
+      await refreshBalances();
       addToast("Leave updated successfully!", "success");
     } catch (err) {
       addToast("Error updating leave: " + err.message, "error");
@@ -176,6 +189,7 @@ export default function Leave() {
       setLeaves(leaves.filter((l) => l.id !== selectedLeave.id));
       setShowDeleteModal(false);
       setSelectedLeave(null);
+      await refreshBalances();
       addToast("Leave deleted successfully!", "success");
     } catch (err) {
       addToast("Error deleting leave: " + err.message, "error");

@@ -242,6 +242,17 @@ export default function Attendance() {
     { header: "Time In", accessor: "timeIn" },
     { header: "Time Out", accessor: "timeOut" },
     {
+      header: "Late",
+      accessor: "lateMinutes",
+      render: (value) => {
+        if (!value || value === 0) return <span className="text-gray-400">-</span>;
+        const hours = Math.floor(value / 60);
+        const mins = value % 60;
+        const display = hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
+        return <span className="text-red-600 font-medium">{display}</span>;
+      },
+    },
+    {
       header: "Hours Worked",
       accessor: "hoursWorked",
       render: (value) => (

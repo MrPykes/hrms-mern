@@ -97,7 +97,11 @@ router.get("/", async (req, res) => {
         id: record._id,
         employeeId: record.employee?._id,
         employeeName: record.employee?.user?.name || "Unknown",
-        // load approved leaves and holidays to mark attendance appropriately
+        date: new Date(record.date).toLocaleDateString("en-US", {
+          month: "2-digit",
+          day: "2-digit",
+          year: "numeric",
+        }),
         timeIn: isOnLeave
           ? "-"
           : clockIn
@@ -257,7 +261,11 @@ router.put("/:id", async (req, res) => {
       id: attendance._id,
       employeeId: attendance.employee._id,
       employeeName: attendance.employee.user?.name || "Unknown",
-      date: new Date(attendance.date).toLocaleDateString("en-US"),
+      date: new Date(attendance.date).toLocaleDateString("en-US", {
+        month: "2-digit",
+        day: "2-digit",
+        year: "numeric",
+      }),
       timeIn: clockIn
         ? clockIn.toLocaleTimeString("en-US", {
             hour: "2-digit",

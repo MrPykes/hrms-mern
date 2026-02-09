@@ -274,6 +274,16 @@ export default function Attendance() {
       },
     },
     {
+      header: "Overtime",
+      accessor: "hoursWorked",
+      render: (value) => {
+        const totalMinutes = ((value?.hours || 0) * 60) + (value?.minutes || 0);
+        const overtimeHours = Math.floor(Math.max(0, totalMinutes - (8 * 60)) / 60);
+        if (overtimeHours === 0) return <span className="text-gray-400">-</span>;
+        return <span className="text-blue-600 font-medium">{overtimeHours}h</span>;
+      },
+    },
+    {
       header: "Status",
       accessor: "status",
       render: (value) => (

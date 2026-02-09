@@ -7,23 +7,31 @@ const Employee = require("../models/Employee");
 
 // Helper function to calculate hours worked with lunch break deduction
 // Deducts 1 hour if employee worked through the lunch period (12pm - 1pm)
+// Returns { hours, minutes } for precise display
 const calculateHoursWorked = (clockIn, clockOut) => {
-  if (!clockIn || !clockOut) return 0;
+  if (!clockIn || !clockOut) return { hours: 0, minutes: 0, decimal: 0 };
   
-  const totalMs = clockOut - clockIn;
-  let totalHours = totalMs / (1000 * 60 * 60);
+  let totalMinutes = Math.round((clockOut - clockIn) / (1000 * 60));
   
   // Get hours of clockIn and clockOut
   const inHour = clockIn.getHours() + clockIn.getMinutes() / 60;
   const outHour = clockOut.getHours() + clockOut.getMinutes() / 60;
   
   // If worked through lunch (clocked in before 12pm AND clocked out after 1pm)
-  // Deduct 1 hour for lunch break
+  // Deduct 1 hour (60 minutes) for lunch break
   if (inHour < 12 && outHour > 13) {
-    totalHours -= 1;
+    totalMinutes -= 60;
   }
   
-  return Math.max(0, totalHours).toFixed(1);
+  totalMinutes = Math.max(0, totalMinutes);
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  
+  return { 
+    hours, 
+    minutes, 
+    decimal: parseFloat((totalMinutes / 60).toFixed(2))
+  };
 };
 
 // Get all attendance records
@@ -48,11 +56,21 @@ router.get("/", async (req, res) => {
 
       const hoursWorked = calculateHoursWorked(clockIn, clockOut);
 
+      // Calculate late minutes dynamically from clockIn (8am start time)
+      let lateMinutes = 0;
+      if (clockIn) {
+        const startTime = new Date(clockIn);
+        startTime.setHours(8, 0, 0, 0);
+        if (clockIn > startTime) {
+          lateMinutes = Math.floor((clockIn - startTime) / (1000 * 60));
+        }
+      }
+
       // default status based on clock records
       let status = "Present";
       if (!clockIn) {
         status = "Absent";
-      } else if (record.lateMinutes > 0) {
+      } else if (lateMinutes > 0) {
         status = "Late";
       }
 
@@ -118,9 +136,9 @@ router.get("/", async (req, res) => {
                 minute: "2-digit",
               })
             : "-",
-        hoursWorked: isOnLeave ? 0 : parseFloat(hoursWorked) || 0,
+        hoursWorked: isOnLeave ? { hours: 0, minutes: 0, decimal: 0 } : hoursWorked,
         status,
-        lateMinutes: record.lateMinutes,
+        lateMinutes: isOnLeave ? 0 : lateMinutes,
         overtimeMinutes: record.overtimeMinutes,
       };
     });
@@ -187,7 +205,11 @@ router.post("/", async (req, res) => {
       id: attendance._id,
       employeeId: attendance.employee._id,
       employeeName: attendance.employee.user?.name || "Unknown",
-      date: new Date(attendance.date).toLocaleDateString("en-US"),
+      date: new Date(attendance.date).toLocaleDateString("en-US", {
+        month: "2-digit",
+        day: "2-digit",
+        year: "numeric",
+      }),
       timeIn: clockIn
         ? clockIn.toLocaleTimeString("en-US", {
             hour: "2-digit",
@@ -200,7 +222,8 @@ router.post("/", async (req, res) => {
             minute: "2-digit",
           })
         : "-",
-      hoursWorked: parseFloat(hoursWorked) || 0,
+      hoursWorked,
+      lateMinutes,
       status,
     });
   } catch (error) {
@@ -278,7 +301,8 @@ router.put("/:id", async (req, res) => {
             minute: "2-digit",
           })
         : "-",
-      hoursWorked: parseFloat(hoursWorked) || 0,
+      hoursWorked,
+      lateMinutes,
       status,
     });
   } catch (error) {

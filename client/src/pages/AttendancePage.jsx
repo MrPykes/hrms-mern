@@ -255,17 +255,23 @@ export default function Attendance() {
     {
       header: "Hours Worked",
       accessor: "hoursWorked",
-      render: (value) => (
-        <span
-          className={
-            value >= 8
-              ? "text-green-600 font-medium"
-              : "text-yellow-600 font-medium"
-          }
-        >
-          {value} hrs
-        </span>
-      ),
+      render: (value) => {
+        const hours = value?.hours || 0;
+        const mins = value?.minutes || 0;
+        const decimal = value?.decimal || 0;
+        const display = hours > 0 && mins > 0 ? `${hours}h ${mins}m` : hours > 0 ? `${hours}h` : mins > 0 ? `${mins}m` : "0h";
+        return (
+          <span
+            className={
+              decimal >= 8
+                ? "text-green-600 font-medium"
+                : "text-yellow-600 font-medium"
+            }
+          >
+            {display}
+          </span>
+        );
+      },
     },
     {
       header: "Status",

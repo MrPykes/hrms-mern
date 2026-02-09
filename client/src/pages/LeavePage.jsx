@@ -87,7 +87,9 @@ export default function Leave() {
 
   const getRemainingFor = (employeeId, leaveType) => {
     if (!employeeId) return null;
-    const b = leaveBalances.find((lb) => String(lb.employeeId) === String(employeeId));
+    const b = leaveBalances.find(
+      (lb) => String(lb.employeeId) === String(employeeId),
+    );
     if (!b) return null;
     if (leaveType === "Vacation Leave") return b.vacationLeave;
     if (leaveType === "Sick Leave") return b.sickLeave;
@@ -449,7 +451,10 @@ export default function Leave() {
           saving={saving}
           employees={employees}
           leaveTypes={leaveTypes}
-          requestedDays={computeRequestedDays(formData.startDate, formData.endDate)}
+          requestedDays={computeRequestedDays(
+            formData.startDate,
+            formData.endDate,
+          )}
           remaining={getRemainingFor(formData.employeeId, formData.leaveType)}
         />
       </Modal>
@@ -475,7 +480,10 @@ export default function Leave() {
           saving={saving}
           employees={employees}
           leaveTypes={leaveTypes}
-          requestedDays={computeRequestedDays(formData.startDate, formData.endDate)}
+          requestedDays={computeRequestedDays(
+            formData.startDate,
+            formData.endDate,
+          )}
           remaining={getRemainingFor(formData.employeeId, formData.leaveType)}
           originalDays={selectedLeave?.days}
           leaveStatus={selectedLeave?.status}

@@ -2,7 +2,12 @@ import React, { useState, useEffect } from "react";
 import Table from "../components/Table";
 import Modal from "../components/Modal";
 import { useToast } from "../components/Toast";
-import { attendanceApi, employeesApi, leavesApi, holidaysApi } from "../services/api";
+import {
+  attendanceApi,
+  employeesApi,
+  leavesApi,
+  holidaysApi,
+} from "../services/api";
 
 export default function Attendance() {
   const { addToast } = useToast();
@@ -86,18 +91,26 @@ export default function Attendance() {
       return false;
     }
     try {
-      const [leaves, holidays] = await Promise.all([leavesApi.getAll(), holidaysApi.getAll()]);
+      const [leaves, holidays] = await Promise.all([
+        leavesApi.getAll(),
+        holidaysApi.getAll(),
+      ]);
       const target = new Date(date);
 
       const onLeave = leaves.some((lv) => {
-        const status = (lv.status || '').toLowerCase();
-        if (status !== 'approved') return false;
-        const lvEmpId = lv.employeeId || (lv.employee && lv.employee._id) || lv.employee;
+        const status = (lv.status || "").toLowerCase();
+        if (status !== "approved") return false;
+        const lvEmpId =
+          lv.employeeId || (lv.employee && lv.employee._id) || lv.employee;
         if (!lvEmpId) return false;
         if (String(lvEmpId) !== String(employeeId)) return false;
         const s = new Date(lv.startDate);
         const e = new Date(lv.endDate);
-        const d = new Date(target.getFullYear(), target.getMonth(), target.getDate());
+        const d = new Date(
+          target.getFullYear(),
+          target.getMonth(),
+          target.getDate(),
+        );
         const ss = new Date(s.getFullYear(), s.getMonth(), s.getDate());
         const ee = new Date(e.getFullYear(), e.getMonth(), e.getDate());
         return d >= ss && d <= ee;
@@ -106,7 +119,11 @@ export default function Attendance() {
       const isHol = holidays.some((h) => {
         if (!h || !h.date) return false;
         const hd = new Date(h.date);
-        const d = new Date(target.getFullYear(), target.getMonth(), target.getDate());
+        const d = new Date(
+          target.getFullYear(),
+          target.getMonth(),
+          target.getDate(),
+        );
         const hh = new Date(hd.getFullYear(), hd.getMonth(), hd.getDate());
         return d.getTime() === hh.getTime();
       });
@@ -115,16 +132,19 @@ export default function Attendance() {
       setIsHoliday(isHol && !onLeave);
 
       if (onLeave) {
-        setFormData((prev) => ({ ...prev, status: 'On Leave' }));
+        setFormData((prev) => ({ ...prev, status: "On Leave" }));
       } else if (isHol) {
-        setFormData((prev) => ({ ...prev, status: 'Holiday' }));
-      } else if (formData.status === 'On Leave' || formData.status === 'Holiday') {
-        setFormData((prev) => ({ ...prev, status: 'Present' }));
+        setFormData((prev) => ({ ...prev, status: "Holiday" }));
+      } else if (
+        formData.status === "On Leave" ||
+        formData.status === "Holiday"
+      ) {
+        setFormData((prev) => ({ ...prev, status: "Present" }));
       }
 
       return onLeave;
     } catch (err) {
-      console.error('Error checking leave/holiday:', err);
+      console.error("Error checking leave/holiday:", err);
       setIsOnLeave(false);
       setIsHoliday(false);
       return false;
@@ -385,8 +405,20 @@ export default function Attendance() {
         >
           {saving && (
             <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+              <circle
+                className="opacity-25"
+                cx="12"
+                cy="12"
+                r="10"
+                stroke="currentColor"
+                strokeWidth="4"
+                fill="none"
+              />
+              <path
+                className="opacity-75"
+                fill="currentColor"
+                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+              />
             </svg>
           )}
           {saving ? "Saving..." : submitText}

@@ -64,16 +64,17 @@ export const leavesApi = {
 
 // Holidays
 export const holidaysApi = {
-  getAll: () => apiCall('/holidays'),
-  create: (data) => apiCall('/holidays', { method: 'POST', body: data }),
-  delete: (id) => apiCall(`/holidays/${id}`, { method: 'DELETE' }),
+  getAll: () => apiCall("/holidays"),
+  create: (data) => apiCall("/holidays", { method: "POST", body: data }),
+  delete: (id) => apiCall(`/holidays/${id}`, { method: "DELETE" }),
 };
 
 // Settings
 export const settingsApi = {
   getAll: () => apiCall("/settings"),
   getLeavePolicy: () => apiCall("/settings/leave"),
-  updateLeavePolicy: (policy) => apiCall("/settings/leave", { method: "PUT", body: policy }),
+  updateLeavePolicy: (policy) =>
+    apiCall("/settings/leave", { method: "PUT", body: policy }),
 };
 
 // Expenses

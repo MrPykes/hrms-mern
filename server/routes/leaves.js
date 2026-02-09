@@ -50,12 +50,18 @@ router.get("/balances", async (req, res) => {
     // Dynamic calculation per current year.
     // Policy: annual entitlements (per year) and prorate based on employment start within the year.
     // Load policy from settings if available
-    const defaultPolicy = { annualVacation: 15, annualSick: 15, annualEmergency: 3 };
-    const policySetting = await Setting.findOne({ key: 'leavePolicy' });
+    const defaultPolicy = {
+      annualVacation: 15,
+      annualSick: 15,
+      annualEmergency: 3,
+    };
+    const policySetting = await Setting.findOne({ key: "leavePolicy" });
     const policy = policySetting ? policySetting.value : defaultPolicy;
-    const ANNUAL_VACATION = policy.annualVacation ?? defaultPolicy.annualVacation;
+    const ANNUAL_VACATION =
+      policy.annualVacation ?? defaultPolicy.annualVacation;
     const ANNUAL_SICK = policy.annualSick ?? defaultPolicy.annualSick;
-    const ANNUAL_EMERGENCY = policy.annualEmergency ?? defaultPolicy.annualEmergency;
+    const ANNUAL_EMERGENCY =
+      policy.annualEmergency ?? defaultPolicy.annualEmergency;
 
     const now = new Date();
     const yearStart = new Date(now.getFullYear(), 0, 1);
@@ -81,15 +87,19 @@ router.get("/balances", async (req, res) => {
       const leaveEnd = new Date(leave.endDate);
       const overlapDays = daysOverlap(leaveStart, leaveEnd, yearStart, yearEnd);
       if (overlapDays <= 0) return; // no days this year
-      if (!usedThisYear[empId]) usedThisYear[empId] = { vacation: 0, sick: 0, emergency: 0 };
-      if (leave.type === "Vacation") usedThisYear[empId].vacation += overlapDays;
+      if (!usedThisYear[empId])
+        usedThisYear[empId] = { vacation: 0, sick: 0, emergency: 0 };
+      if (leave.type === "Vacation")
+        usedThisYear[empId].vacation += overlapDays;
       if (leave.type === "Sick") usedThisYear[empId].sick += overlapDays;
       if (leave.type === "Unpaid") usedThisYear[empId].emergency += overlapDays;
     });
 
     // Use full annual entitlements from settings (no prorating), subtract approved used days in current year
     const balances = employees.map((emp) => {
-      const hire = emp.employment?.hireDate ? new Date(emp.employment.hireDate) : null;
+      const hire = emp.employment?.hireDate
+        ? new Date(emp.employment.hireDate)
+        : null;
       // if hire is in future, no entitlement
       if (hire && hire > now) {
         return {
@@ -105,11 +115,24 @@ router.get("/balances", async (req, res) => {
       const entitlementSick = ANNUAL_SICK;
       const entitlementEmergency = ANNUAL_EMERGENCY;
 
-      const used = usedThisYear[emp._id.toString()] || { vacation: 0, sick: 0, emergency: 0 };
+      const used = usedThisYear[emp._id.toString()] || {
+        vacation: 0,
+        sick: 0,
+        emergency: 0,
+      };
 
-      const availVacation = Math.max(0, Math.round((entitlementVacation - used.vacation) * 10) / 10);
-      const availSick = Math.max(0, Math.round((entitlementSick - used.sick) * 10) / 10);
-      const availEmergency = Math.max(0, Math.round((entitlementEmergency - used.emergency) * 10) / 10);
+      const availVacation = Math.max(
+        0,
+        Math.round((entitlementVacation - used.vacation) * 10) / 10,
+      );
+      const availSick = Math.max(
+        0,
+        Math.round((entitlementSick - used.sick) * 10) / 10,
+      );
+      const availEmergency = Math.max(
+        0,
+        Math.round((entitlementEmergency - used.emergency) * 10) / 10,
+      );
 
       return {
         employeeId: emp._id,

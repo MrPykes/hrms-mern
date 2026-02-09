@@ -14,10 +14,11 @@ export default function LeaveForm({
   originalDays,
   leaveStatus,
 }) {
-  const exceeds = typeof remaining === 'number' && requestedDays > remaining;
-  const hasOriginal = typeof originalDays === 'number' && !isNaN(originalDays);
+  const exceeds = typeof remaining === "number" && requestedDays > remaining;
+  const hasOriginal = typeof originalDays === "number" && !isNaN(originalDays);
   const netChange = hasOriginal ? requestedDays - originalDays : null;
-  const exceedsEdit = hasOriginal && leaveStatus === 'Approved' && netChange > remaining;
+  const exceedsEdit =
+    hasOriginal && leaveStatus === "Approved" && netChange > remaining;
 
   return (
     <form
@@ -62,19 +63,33 @@ export default function LeaveForm({
             </option>
           ))}
         </select>
-        {typeof remaining === 'number' && (
+        {typeof remaining === "number" && (
           <div className="mt-1">
-            <p className={`text-sm ${exceeds || exceedsEdit ? 'text-red-600' : 'text-gray-500'}`}>
-              Requested: {requestedDays} day{requestedDays !== 1 ? 's' : ''}. Remaining: {remaining} day{remaining !== 1 ? 's' : ''}.
+            <p
+              className={`text-sm ${exceeds || exceedsEdit ? "text-red-600" : "text-gray-500"}`}
+            >
+              Requested: {requestedDays} day{requestedDays !== 1 ? "s" : ""}.
+              Remaining: {remaining} day{remaining !== 1 ? "s" : ""}.
             </p>
             {exceeds && (
-              <p className="text-sm text-red-600">You are exceeding the available balance by {requestedDays - remaining} day{requestedDays - remaining !== 1 ? 's' : ''}.</p>
+              <p className="text-sm text-red-600">
+                You are exceeding the available balance by{" "}
+                {requestedDays - remaining} day
+                {requestedDays - remaining !== 1 ? "s" : ""}.
+              </p>
             )}
             {exceedsEdit && (
-              <p className="text-sm text-red-600">This approved leave update increases used days by {netChange} and will exceed remaining by {netChange - remaining} day{netChange - remaining !== 1 ? 's' : ''}.</p>
+              <p className="text-sm text-red-600">
+                This approved leave update increases used days by {netChange}{" "}
+                and will exceed remaining by {netChange - remaining} day
+                {netChange - remaining !== 1 ? "s" : ""}.
+              </p>
             )}
             {hasOriginal && !exceedsEdit && (
-              <p className="text-sm text-gray-500">Original days: {originalDays}. Net change: {netChange >= 0 ? `+${netChange}` : netChange}.</p>
+              <p className="text-sm text-gray-500">
+                Original days: {originalDays}. Net change:{" "}
+                {netChange >= 0 ? `+${netChange}` : netChange}.
+              </p>
             )}
           </div>
         )}

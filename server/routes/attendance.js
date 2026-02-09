@@ -3,8 +3,28 @@ const router = express.Router();
 const Attendance = require("../models/Attendance");
 const Leave = require("../models/Leave");
 const Holiday = require("../models/Holiday");
-const Holiday = require("../models/Holiday");
 const Employee = require("../models/Employee");
+
+// Helper function to calculate hours worked with lunch break deduction
+// Deducts 1 hour if employee worked through the lunch period (12pm - 1pm)
+const calculateHoursWorked = (clockIn, clockOut) => {
+  if (!clockIn || !clockOut) return 0;
+  
+  const totalMs = clockOut - clockIn;
+  let totalHours = totalMs / (1000 * 60 * 60);
+  
+  // Get hours of clockIn and clockOut
+  const inHour = clockIn.getHours() + clockIn.getMinutes() / 60;
+  const outHour = clockOut.getHours() + clockOut.getMinutes() / 60;
+  
+  // If worked through lunch (clocked in before 12pm AND clocked out after 1pm)
+  // Deduct 1 hour for lunch break
+  if (inHour < 12 && outHour > 13) {
+    totalHours -= 1;
+  }
+  
+  return Math.max(0, totalHours).toFixed(1);
+};
 
 // Get all attendance records
 router.get("/", async (req, res) => {
@@ -26,10 +46,7 @@ router.get("/", async (req, res) => {
       const clockIn = record.clockIn ? new Date(record.clockIn) : null;
       const clockOut = record.clockOut ? new Date(record.clockOut) : null;
 
-      let hoursWorked = 0;
-      if (clockIn && clockOut) {
-        hoursWorked = ((clockOut - clockIn) / (1000 * 60 * 60)).toFixed(1);
-      }
+      const hoursWorked = calculateHoursWorked(clockIn, clockOut);
 
       // default status based on clock records
       let status = "Present";
@@ -43,11 +60,16 @@ router.get("/", async (req, res) => {
       const recDate = new Date(record.date);
       const isOnLeave = approvedLeaves.some((lv) => {
         if (!lv.employee) return false;
-        if (lv.employee.toString() !== (record.employee?._id || "").toString()) return false;
+        if (lv.employee.toString() !== (record.employee?._id || "").toString())
+          return false;
         const ls = new Date(lv.startDate);
         const le = new Date(lv.endDate);
         // normalize dates to ignore time portion
-        const d = new Date(recDate.getFullYear(), recDate.getMonth(), recDate.getDate());
+        const d = new Date(
+          recDate.getFullYear(),
+          recDate.getMonth(),
+          recDate.getDate(),
+        );
         const s = new Date(ls.getFullYear(), ls.getMonth(), ls.getDate());
         const e = new Date(le.getFullYear(), le.getMonth(), le.getDate());
         return d >= s && d <= e;
@@ -60,7 +82,11 @@ router.get("/", async (req, res) => {
         const isHoliday = holidays.some((h) => {
           if (!h || !h.date) return false;
           const hd = new Date(h.date);
-          const d = new Date(recDate.getFullYear(), recDate.getMonth(), recDate.getDate());
+          const d = new Date(
+            recDate.getFullYear(),
+            recDate.getMonth(),
+            recDate.getDate(),
+          );
           const hh = new Date(hd.getFullYear(), hd.getMonth(), hd.getDate());
           return d.getTime() === hh.getTime();
         });
@@ -71,20 +97,24 @@ router.get("/", async (req, res) => {
         id: record._id,
         employeeId: record.employee?._id,
         employeeName: record.employee?.user?.name || "Unknown",
-            // load approved leaves and holidays to mark attendance appropriately
-        timeIn: isOnLeave ? "-" : (clockIn
-          ? clockIn.toLocaleTimeString("en-US", {
-              hour: "2-digit",
-              minute: "2-digit",
-            })
-          : "-"),
-        timeOut: isOnLeave ? "-" : (clockOut
-          ? clockOut.toLocaleTimeString("en-US", {
-              hour: "2-digit",
-              minute: "2-digit",
-            })
-          : "-"),
-        hoursWorked: isOnLeave ? 0 : (parseFloat(hoursWorked) || 0),
+        // load approved leaves and holidays to mark attendance appropriately
+        timeIn: isOnLeave
+          ? "-"
+          : clockIn
+            ? clockIn.toLocaleTimeString("en-US", {
+                hour: "2-digit",
+                minute: "2-digit",
+              })
+            : "-",
+        timeOut: isOnLeave
+          ? "-"
+          : clockOut
+            ? clockOut.toLocaleTimeString("en-US", {
+                hour: "2-digit",
+                minute: "2-digit",
+              })
+            : "-",
+        hoursWorked: isOnLeave ? 0 : parseFloat(hoursWorked) || 0,
         status,
         lateMinutes: record.lateMinutes,
         overtimeMinutes: record.overtimeMinutes,
@@ -147,10 +177,7 @@ router.post("/", async (req, res) => {
       populate: { path: "user", select: "name" },
     });
 
-    let hoursWorked = 0;
-    if (clockIn && clockOut) {
-      hoursWorked = ((clockOut - clockIn) / (1000 * 60 * 60)).toFixed(1);
-    }
+    const hoursWorked = calculateHoursWorked(clockIn, clockOut);
 
     res.status(201).json({
       id: attendance._id,
@@ -224,10 +251,7 @@ router.put("/:id", async (req, res) => {
       populate: { path: "user", select: "name" },
     });
 
-    let hoursWorked = 0;
-    if (clockIn && clockOut) {
-      hoursWorked = ((clockOut - clockIn) / (1000 * 60 * 60)).toFixed(1);
-    }
+    const hoursWorked = calculateHoursWorked(clockIn, clockOut);
 
     res.json({
       id: attendance._id,

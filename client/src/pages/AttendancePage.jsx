@@ -245,7 +245,8 @@ export default function Attendance() {
       header: "Late",
       accessor: "lateMinutes",
       render: (value) => {
-        if (!value || value === 0) return <span className="text-gray-400">-</span>;
+        if (!value || value === 0)
+          return <span className="text-gray-400">-</span>;
         const hours = Math.floor(value / 60);
         const mins = value % 60;
         const display = hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
@@ -259,7 +260,14 @@ export default function Attendance() {
         const hours = value?.hours || 0;
         const mins = value?.minutes || 0;
         const decimal = value?.decimal || 0;
-        const display = hours > 0 && mins > 0 ? `${hours}h ${mins}m` : hours > 0 ? `${hours}h` : mins > 0 ? `${mins}m` : "0h";
+        const display =
+          hours > 0 && mins > 0
+            ? `${hours}h ${mins}m`
+            : hours > 0
+              ? `${hours}h`
+              : mins > 0
+                ? `${mins}m`
+                : "0h";
         return (
           <span
             className={
@@ -277,10 +285,15 @@ export default function Attendance() {
       header: "Overtime",
       accessor: "hoursWorked",
       render: (value) => {
-        const totalMinutes = ((value?.hours || 0) * 60) + (value?.minutes || 0);
-        const overtimeHours = Math.floor(Math.max(0, totalMinutes - (8 * 60)) / 60);
-        if (overtimeHours === 0) return <span className="text-gray-400">-</span>;
-        return <span className="text-blue-600 font-medium">{overtimeHours}h</span>;
+        const totalMinutes = (value?.hours || 0) * 60 + (value?.minutes || 0);
+        const overtimeHours = Math.floor(
+          Math.max(0, totalMinutes - 8 * 60) / 60,
+        );
+        if (overtimeHours === 0)
+          return <span className="text-gray-400">-</span>;
+        return (
+          <span className="text-blue-600 font-medium">{overtimeHours}h</span>
+        );
       },
     },
     {

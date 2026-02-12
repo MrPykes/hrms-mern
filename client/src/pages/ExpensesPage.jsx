@@ -5,6 +5,110 @@ import { expensesApi } from "../services/api";
 import { expenseCategories } from "../data/mockData";
 import { useToast } from "../components/Toast";
 
+// Separate component to prevent re-renders
+function ExpenseForm({ initialData, onSubmit, onCancel, saving, submitText }) {
+  const [formData, setFormData] = useState(initialData);
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    onSubmit(formData);
+  };
+
+  return (
+    <form className="space-y-4" onSubmit={handleSubmit}>
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
+        <input
+          type="date"
+          name="date"
+          value={formData.date}
+          onChange={handleChange}
+          required
+          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+        />
+      </div>
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
+        <select
+          name="category"
+          value={formData.category}
+          onChange={handleChange}
+          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+        >
+          {expenseCategories.map((cat) => (
+            <option key={cat} value={cat}>{cat}</option>
+          ))}
+        </select>
+      </div>
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+        <input
+          type="text"
+          name="description"
+          value={formData.description}
+          onChange={handleChange}
+          required
+          placeholder="Enter expense description..."
+          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+        />
+      </div>
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">Amount (₱)</label>
+        <input
+          type="number"
+          name="amount"
+          value={formData.amount}
+          onChange={handleChange}
+          required
+          placeholder="0.00"
+          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+        />
+      </div>
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">Paid By</label>
+        <select
+          name="paidBy"
+          value={formData.paidBy}
+          onChange={handleChange}
+          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+        >
+          <option value="Petty Cash">Petty Cash</option>
+          <option value="Bank Transfer">Bank Transfer</option>
+          <option value="Credit Card">Credit Card</option>
+        </select>
+      </div>
+      <div className="flex justify-end gap-3 pt-4 border-t">
+        <button
+          type="button"
+          onClick={onCancel}
+          disabled={saving}
+          className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50"
+        >
+          Cancel
+        </button>
+        <button
+          type="submit"
+          disabled={saving}
+          className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
+        >
+          {saving && (
+            <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+            </svg>
+          )}
+          {saving ? "Saving..." : submitText}
+        </button>
+      </div>
+    </form>
+  );
+}
+
 export default function Expenses() {
   const { addToast } = useToast();
   const [expenses, setExpenses] = useState([]);
@@ -16,13 +120,13 @@ export default function Expenses() {
   const [selectedCategory, setSelectedCategory] = useState("");
   const [saving, setSaving] = useState(false);
 
-  const [formData, setFormData] = useState({
+  const defaultFormData = {
     date: "",
     category: "Office Supplies",
     description: "",
     amount: "",
     paidBy: "Petty Cash",
-  });
+  };
 
   useEffect(() => {
     fetchExpenses();
@@ -54,28 +158,12 @@ export default function Expenses() {
     return `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`;
   };
 
-  const resetForm = () => {
-    setFormData({
-      date: "",
-      category: "Office Supplies",
-      description: "",
-      amount: "",
-      paidBy: "Petty Cash",
-    });
-  };
-
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-  };
-
-  const handleAddExpense = async () => {
+  const handleAddExpense = async (formData) => {
     try {
       setSaving(true);
       const newExpense = await expensesApi.create(formData);
       setExpenses([newExpense, ...expenses]);
       setShowAddModal(false);
-      resetForm();
       addToast("Expense added successfully!", "success");
     } catch (err) {
       addToast("Error adding expense: " + err.message, "error");
@@ -86,17 +174,10 @@ export default function Expenses() {
 
   const handleEditClick = (expense) => {
     setSelectedExpense(expense);
-    setFormData({
-      date: formatDateForInput(expense.date),
-      category: expense.category,
-      description: expense.description,
-      amount: expense.amount.toString(),
-      paidBy: expense.paidBy,
-    });
     setShowEditModal(true);
   };
 
-  const handleUpdateExpense = async () => {
+  const handleUpdateExpense = async (formData) => {
     try {
       setSaving(true);
       const updated = await expensesApi.update(selectedExpense.id, formData);
@@ -105,7 +186,6 @@ export default function Expenses() {
       );
       setShowEditModal(false);
       setSelectedExpense(null);
-      resetForm();
       addToast("Expense updated successfully!", "success");
     } catch (err) {
       addToast("Error updating expense: " + err.message, "error");
@@ -204,129 +284,6 @@ export default function Expenses() {
     }))
     .filter((c) => c.total > 0);
 
-  const ExpenseForm = ({ onSubmit, submitText }) => (
-    <form
-      className="space-y-4"
-      onSubmit={(e) => {
-        e.preventDefault();
-        onSubmit();
-      }}
-    >
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
-          Date
-        </label>
-        <input
-          type="date"
-          name="date"
-          value={formData.date}
-          onChange={handleInputChange}
-          required
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-        />
-      </div>
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
-          Category
-        </label>
-        <select
-          name="category"
-          value={formData.category}
-          onChange={handleInputChange}
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-        >
-          {expenseCategories.map((cat) => (
-            <option key={cat} value={cat}>
-              {cat}
-            </option>
-          ))}
-        </select>
-      </div>
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
-          Description
-        </label>
-        <input
-          type="text"
-          name="description"
-          value={formData.description}
-          onChange={handleInputChange}
-          required
-          placeholder="Enter expense description..."
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-        />
-      </div>
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
-          Amount (₱)
-        </label>
-        <input
-          type="number"
-          name="amount"
-          value={formData.amount}
-          onChange={handleInputChange}
-          required
-          placeholder="0.00"
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-        />
-      </div>
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
-          Paid By
-        </label>
-        <select
-          name="paidBy"
-          value={formData.paidBy}
-          onChange={handleInputChange}
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-        >
-          <option value="Petty Cash">Petty Cash</option>
-          <option value="Bank Transfer">Bank Transfer</option>
-          <option value="Credit Card">Credit Card</option>
-        </select>
-      </div>
-      <div className="flex justify-end gap-3 pt-4 border-t">
-        <button
-          type="button"
-          onClick={() => {
-            setShowAddModal(false);
-            setShowEditModal(false);
-            resetForm();
-          }}
-          disabled={saving}
-          className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50"
-        >
-          Cancel
-        </button>
-        <button
-          type="submit"
-          disabled={saving}
-          className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
-        >
-          {saving && (
-            <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
-              <circle
-                className="opacity-25"
-                cx="12"
-                cy="12"
-                r="10"
-                stroke="currentColor"
-                strokeWidth="4"
-                fill="none"
-              />
-              <path
-                className="opacity-75"
-                fill="currentColor"
-                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-              />
-            </svg>
-          )}
-          {saving ? "Saving..." : submitText}
-        </button>
-      </div>
-    </form>
-  );
-
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -345,10 +302,7 @@ export default function Expenses() {
           </p>
         </div>
         <button
-          onClick={() => {
-            resetForm();
-            setShowAddModal(true);
-          }}
+          onClick={() => setShowAddModal(true)}
           className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
         >
           <svg
@@ -419,29 +373,40 @@ export default function Expenses() {
 
       <Modal
         isOpen={showAddModal}
-        onClose={() => {
-          setShowAddModal(false);
-          resetForm();
-        }}
+        onClose={() => setShowAddModal(false)}
         title="Add Expense"
         size="md"
       >
-        <ExpenseForm onSubmit={handleAddExpense} submitText="Add Expense" />
+        <ExpenseForm
+          initialData={defaultFormData}
+          onSubmit={handleAddExpense}
+          onCancel={() => setShowAddModal(false)}
+          saving={saving}
+          submitText="Add Expense"
+        />
       </Modal>
 
       <Modal
         isOpen={showEditModal}
-        onClose={() => {
-          setShowEditModal(false);
-          resetForm();
-        }}
+        onClose={() => setShowEditModal(false)}
         title="Edit Expense"
         size="md"
       >
-        <ExpenseForm
-          onSubmit={handleUpdateExpense}
-          submitText="Update Expense"
-        />
+        {selectedExpense && (
+          <ExpenseForm
+            initialData={{
+              date: formatDateForInput(selectedExpense.date),
+              category: selectedExpense.category,
+              description: selectedExpense.description,
+              amount: selectedExpense.amount.toString(),
+              paidBy: selectedExpense.paidBy,
+            }}
+            onSubmit={handleUpdateExpense}
+            onCancel={() => setShowEditModal(false)}
+            saving={saving}
+            submitText="Update Expense"
+          />
+        )}
       </Modal>
 
       <Modal

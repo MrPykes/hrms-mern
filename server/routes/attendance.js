@@ -10,27 +10,27 @@ const Employee = require("../models/Employee");
 // Returns { hours, minutes } for precise display
 const calculateHoursWorked = (clockIn, clockOut) => {
   if (!clockIn || !clockOut) return { hours: 0, minutes: 0, decimal: 0 };
-  
+
   let totalMinutes = Math.round((clockOut - clockIn) / (1000 * 60));
-  
+
   // Get hours of clockIn and clockOut
   const inHour = clockIn.getHours() + clockIn.getMinutes() / 60;
   const outHour = clockOut.getHours() + clockOut.getMinutes() / 60;
-  
+
   // If worked through lunch (clocked in before 12pm AND clocked out after 1pm)
   // Deduct 1 hour (60 minutes) for lunch break
   if (inHour < 12 && outHour > 13) {
     totalMinutes -= 60;
   }
-  
+
   totalMinutes = Math.max(0, totalMinutes);
   const hours = Math.floor(totalMinutes / 60);
   const minutes = totalMinutes % 60;
-  
-  return { 
-    hours, 
-    minutes, 
-    decimal: parseFloat((totalMinutes / 60).toFixed(2))
+
+  return {
+    hours,
+    minutes,
+    decimal: parseFloat((totalMinutes / 60).toFixed(2)),
   };
 };
 
@@ -136,7 +136,9 @@ router.get("/", async (req, res) => {
                 minute: "2-digit",
               })
             : "-",
-        hoursWorked: isOnLeave ? { hours: 0, minutes: 0, decimal: 0 } : hoursWorked,
+        hoursWorked: isOnLeave
+          ? { hours: 0, minutes: 0, decimal: 0 }
+          : hoursWorked,
         status,
         lateMinutes: isOnLeave ? 0 : lateMinutes,
         overtimeMinutes: record.overtimeMinutes,

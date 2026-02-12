@@ -257,7 +257,20 @@ export default function Expenses() {
   });
 
   const columns = [
-    { header: "Date", accessor: "date" },
+    {
+      header: "Date",
+      accessor: "date",
+      render: (value) => {
+        if (!value) return "-";
+        const [month, day, year] = value.split("/");
+        const date = new Date(year, month - 1, day);
+        return date.toLocaleDateString("en-US", {
+          month: "long",
+          day: "numeric",
+          year: "numeric",
+        });
+      },
+    },
     {
       header: "Category",
       accessor: "category",

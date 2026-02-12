@@ -11,7 +11,7 @@ function ExpenseForm({ initialData, onSubmit, onCancel, saving, submitText }) {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleSubmit = (e) => {
@@ -22,7 +22,9 @@ function ExpenseForm({ initialData, onSubmit, onCancel, saving, submitText }) {
   return (
     <form className="space-y-4" onSubmit={handleSubmit}>
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
+        <label className="block text-sm font-medium text-gray-700 mb-1">
+          Date
+        </label>
         <input
           type="date"
           name="date"
@@ -33,7 +35,9 @@ function ExpenseForm({ initialData, onSubmit, onCancel, saving, submitText }) {
         />
       </div>
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
+        <label className="block text-sm font-medium text-gray-700 mb-1">
+          Category
+        </label>
         <select
           name="category"
           value={formData.category}
@@ -41,12 +45,16 @@ function ExpenseForm({ initialData, onSubmit, onCancel, saving, submitText }) {
           className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
         >
           {expenseCategories.map((cat) => (
-            <option key={cat} value={cat}>{cat}</option>
+            <option key={cat} value={cat}>
+              {cat}
+            </option>
           ))}
         </select>
       </div>
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+        <label className="block text-sm font-medium text-gray-700 mb-1">
+          Description
+        </label>
         <input
           type="text"
           name="description"
@@ -58,7 +66,9 @@ function ExpenseForm({ initialData, onSubmit, onCancel, saving, submitText }) {
         />
       </div>
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Amount (₱)</label>
+        <label className="block text-sm font-medium text-gray-700 mb-1">
+          Amount (₱)
+        </label>
         <input
           type="number"
           name="amount"
@@ -70,7 +80,9 @@ function ExpenseForm({ initialData, onSubmit, onCancel, saving, submitText }) {
         />
       </div>
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Paid By</label>
+        <label className="block text-sm font-medium text-gray-700 mb-1">
+          Paid By
+        </label>
         <select
           name="paidBy"
           value={formData.paidBy}
@@ -98,8 +110,20 @@ function ExpenseForm({ initialData, onSubmit, onCancel, saving, submitText }) {
         >
           {saving && (
             <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+              <circle
+                className="opacity-25"
+                cx="12"
+                cy="12"
+                r="10"
+                stroke="currentColor"
+                strokeWidth="4"
+                fill="none"
+              />
+              <path
+                className="opacity-75"
+                fill="currentColor"
+                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+              />
             </svg>
           )}
           {saving ? "Saving..." : submitText}
@@ -118,6 +142,8 @@ export default function Expenses() {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [selectedExpense, setSelectedExpense] = useState(null);
   const [selectedCategory, setSelectedCategory] = useState("");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
   const [saving, setSaving] = useState(false);
 
   const defaultFormData = {
@@ -215,7 +241,19 @@ export default function Expenses() {
   };
 
   const filteredExpenses = expenses.filter((expense) => {
-    return !selectedCategory || expense.category === selectedCategory;
+    // Category filter
+    if (selectedCategory && expense.category !== selectedCategory) return false;
+
+    // Date filter - compare as YYYY-MM-DD strings to avoid timezone issues
+    if (startDate || endDate) {
+      const [month, day, year] = expense.date.split("/");
+      const expenseDateStr = `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`;
+
+      if (startDate && expenseDateStr < startDate) return false;
+      if (endDate && expenseDateStr > endDate) return false;
+    }
+
+    return true;
   });
 
   const columns = [
@@ -348,22 +386,60 @@ export default function Expenses() {
       </div>
 
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Category
-          </label>
-          <select
-            value={selectedCategory}
-            onChange={(e) => setSelectedCategory(e.target.value)}
-            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-          >
-            <option value="">All Categories</option>
-            {expenseCategories.map((cat) => (
-              <option key={cat} value={cat}>
-                {cat}
-              </option>
-            ))}
-          </select>
+        <div className="flex flex-wrap gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Category
+            </label>
+            <select
+              value={selectedCategory}
+              onChange={(e) => setSelectedCategory(e.target.value)}
+              className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            >
+              <option value="">All Categories</option>
+              {expenseCategories.map((cat) => (
+                <option key={cat} value={cat}>
+                  {cat}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Start Date
+            </label>
+            <input
+              type="date"
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+              className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              End Date
+            </label>
+            <input
+              type="date"
+              value={endDate}
+              onChange={(e) => setEndDate(e.target.value)}
+              className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            />
+          </div>
+          {(selectedCategory || startDate || endDate) && (
+            <div className="flex items-end">
+              <button
+                onClick={() => {
+                  setSelectedCategory("");
+                  setStartDate("");
+                  setEndDate("");
+                }}
+                className="px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                Clear Filters
+              </button>
+            </div>
+          )}
         </div>
       </div>
 

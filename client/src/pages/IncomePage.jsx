@@ -23,23 +23,39 @@ function IncomeForm({ initialData, onSubmit, onCancel, saving, submitText }) {
     <form className="space-y-4" onSubmit={handleSubmit}>
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
-        <input
-          type="date"
-          name="date"
-          value={formData.date}
-          onChange={handleChange}
-          required
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-        />
+        <input type="date" name="date" value={formData.date} onChange={handleChange} required className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
+      </div>
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">Client Name</label>
+        <input type="text" name="clientName" value={formData.clientName || ""} onChange={handleChange} placeholder="Enter client name..." className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
+      </div>
+      <div className="flex gap-4">
+        <div className="flex-1">
+          <label className="block text-sm font-medium text-gray-700 mb-1">Date From</label>
+          <input type="date" name="dateFrom" value={formData.dateFrom || ""} onChange={handleChange} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
+        </div>
+        <div className="flex-1">
+          <label className="block text-sm font-medium text-gray-700 mb-1">Date To</label>
+          <input type="date" name="dateTo" value={formData.dateTo || ""} onChange={handleChange} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
+        </div>
+      </div>
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">Account</label>
+        <input type="text" name="account" value={formData.account || ""} onChange={handleChange} placeholder="Enter account..." className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
+      </div>
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+        <select name="status" value={formData.status || ""} onChange={handleChange} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+          <option value="">Select status</option>
+          <option value="Weekly">Weekly</option>
+          <option value="Monthly">Monthly</option>
+          <option value="Per Hour">Per Hour</option>
+          <option value="Per Project">Per Project</option>
+        </select>
       </div>
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">Source</label>
-        <select
-          name="source"
-          value={formData.source}
-          onChange={handleChange}
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-        >
+        <select name="source" value={formData.source} onChange={handleChange} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
           {incomeSources.map((source) => (
             <option key={source} value={source}>{source}</option>
           ))}
@@ -47,42 +63,15 @@ function IncomeForm({ initialData, onSubmit, onCancel, saving, submitText }) {
       </div>
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
-        <input
-          type="text"
-          name="description"
-          value={formData.description}
-          onChange={handleChange}
-          required
-          placeholder="Enter income description..."
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-        />
+        <input type="text" name="description" value={formData.description} onChange={handleChange} required placeholder="Enter income description..." className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
       </div>
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">Amount (₱)</label>
-        <input
-          type="number"
-          name="amount"
-          value={formData.amount}
-          onChange={handleChange}
-          required
-          placeholder="0.00"
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-        />
+        <input type="number" name="amount" value={formData.amount} onChange={handleChange} required placeholder="0.00" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
       </div>
       <div className="flex justify-end gap-3 pt-4 border-t">
-        <button
-          type="button"
-          onClick={onCancel}
-          disabled={saving}
-          className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50"
-        >
-          Cancel
-        </button>
-        <button
-          type="submit"
-          disabled={saving}
-          className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
-        >
+        <button type="button" onClick={onCancel} disabled={saving} className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50">Cancel</button>
+        <button type="submit" disabled={saving} className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50">
           {saving && (
             <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
               <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
@@ -106,8 +95,6 @@ export default function Income() {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [selectedIncome, setSelectedIncome] = useState(null);
   const [saving, setSaving] = useState(false);
-
-
 
   useEffect(() => {
     fetchData();
@@ -143,13 +130,13 @@ export default function Income() {
     return `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`;
   };
 
-
-
-
-
-
   const defaultFormData = {
     date: "",
+    clientName: "",
+    dateFrom: "",
+    dateTo: "",
+    account: "",
+    status: "",
     source: "Client Payments",
     description: "",
     amount: "",
@@ -169,12 +156,10 @@ export default function Income() {
     }
   };
 
-
   const handleEditClick = (income) => {
     setSelectedIncome(income);
     setShowEditModal(true);
   };
-
 
   const handleUpdateIncome = async (formData) => {
     try {
@@ -276,113 +261,6 @@ export default function Income() {
     }))
     .filter((s) => s.total > 0);
 
-  const IncomeForm = ({ onSubmit, submitText }) => (
-    <form
-      className="space-y-4"
-      onSubmit={(e) => {
-        e.preventDefault();
-        onSubmit();
-      }}
-    >
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
-          Date
-        </label>
-        <input
-          type="date"
-          name="date"
-          value={formData.date}
-          onChange={handleInputChange}
-          required
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-        />
-      </div>
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
-          Source
-        </label>
-        <select
-          name="source"
-          value={formData.source}
-          onChange={handleInputChange}
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-        >
-          {incomeSources.map((source) => (
-            <option key={source} value={source}>
-              {source}
-            </option>
-          ))}
-        </select>
-      </div>
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
-          Description
-        </label>
-        <input
-          type="text"
-          name="description"
-          value={formData.description}
-          onChange={handleInputChange}
-          required
-          placeholder="Enter income description..."
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-        />
-      </div>
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
-          Amount (₱)
-        </label>
-        <input
-          type="number"
-          name="amount"
-          value={formData.amount}
-          onChange={handleInputChange}
-          required
-          placeholder="0.00"
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-        />
-      </div>
-      <div className="flex justify-end gap-3 pt-4 border-t">
-        <button
-          type="button"
-          onClick={() => {
-            setShowAddModal(false);
-            setShowEditModal(false);
-            resetForm();
-          }}
-          disabled={saving}
-          className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50"
-        >
-          Cancel
-        </button>
-        <button
-          type="submit"
-          disabled={saving}
-          className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
-        >
-          {saving && (
-            <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
-              <circle
-                className="opacity-25"
-                cx="12"
-                cy="12"
-                r="10"
-                stroke="currentColor"
-                strokeWidth="4"
-                fill="none"
-              />
-              <path
-                className="opacity-75"
-                fill="currentColor"
-                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-              />
-            </svg>
-          )}
-          {saving ? "Saving..." : submitText}
-        </button>
-      </div>
-    </form>
-  );
 
   if (loading) {
     return (
@@ -418,7 +296,6 @@ export default function Income() {
           </svg>
           Add Income
         </button>
-
       </div>
 
       <Modal
@@ -446,9 +323,14 @@ export default function Income() {
           <IncomeForm
             initialData={{
               date: formatDateForInput(selectedIncome.date),
+              clientName: selectedIncome.clientName || "",
+              dateFrom: selectedIncome.dateFrom ? formatDateForInput(selectedIncome.dateFrom) : "",
+              dateTo: selectedIncome.dateTo ? formatDateForInput(selectedIncome.dateTo) : "",
+              account: selectedIncome.account || "",
+              status: selectedIncome.status || "",
               source: selectedIncome.source,
               description: selectedIncome.description,
-              amount: selectedIncome.amount.toString(),
+              amount: selectedIncome.amount?.toString() || "",
             }}
             onSubmit={handleUpdateIncome}
             onCancel={() => setShowEditModal(false)}
@@ -582,6 +464,7 @@ export default function Income() {
         <Table columns={columns} data={incomeList} />
       </div>
 
+
       <Modal
         isOpen={showAddModal}
         onClose={() => {
@@ -591,7 +474,13 @@ export default function Income() {
         title="Add Income"
         size="md"
       >
-        <IncomeForm onSubmit={handleAddIncome} submitText="Add Income" />
+        <IncomeForm
+          initialData={{ date: "", source: "Client Payments", description: "", amount: "" }}
+          onSubmit={handleAddIncome}
+          onCancel={() => setShowAddModal(false)}
+          saving={saving}
+          submitText="Add Income"
+        />
       </Modal>
 
       <Modal
@@ -603,7 +492,20 @@ export default function Income() {
         title="Edit Income"
         size="md"
       >
-        <IncomeForm onSubmit={handleUpdateIncome} submitText="Update Income" />
+        {selectedIncome && (
+          <IncomeForm
+            initialData={{
+              date: selectedIncome.date ? (() => { const [m,d,y]=selectedIncome.date.split('/'); return `${y}-${m.padStart(2,'0')}-${d.padStart(2,'0')}`; })() : "",
+              source: selectedIncome.source || "Client Payments",
+              description: selectedIncome.description || "",
+              amount: selectedIncome.amount?.toString() || ""
+            }}
+            onSubmit={handleUpdateIncome}
+            onCancel={() => setShowEditModal(false)}
+            saving={saving}
+            submitText="Update Income"
+          />
+        )}
       </Modal>
 
       <Modal
@@ -652,8 +554,6 @@ export default function Income() {
               {saving ? "Deleting..." : "Delete"}
             </button>
           </div>
-
-
         </div>
       </Modal>
     </div>

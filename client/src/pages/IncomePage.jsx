@@ -5,6 +5,97 @@ import { incomeApi, expensesApi } from "../services/api";
 import { incomeSources } from "../data/mockData";
 import { useToast } from "../components/Toast";
 
+// Separate component to prevent re-renders and focus loss
+function IncomeForm({ initialData, onSubmit, onCancel, saving, submitText }) {
+  const [formData, setFormData] = useState(initialData);
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    onSubmit(formData);
+  };
+
+  return (
+    <form className="space-y-4" onSubmit={handleSubmit}>
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
+        <input
+          type="date"
+          name="date"
+          value={formData.date}
+          onChange={handleChange}
+          required
+          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+        />
+      </div>
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">Source</label>
+        <select
+          name="source"
+          value={formData.source}
+          onChange={handleChange}
+          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+        >
+          {incomeSources.map((source) => (
+            <option key={source} value={source}>{source}</option>
+          ))}
+        </select>
+      </div>
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+        <input
+          type="text"
+          name="description"
+          value={formData.description}
+          onChange={handleChange}
+          required
+          placeholder="Enter income description..."
+          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+        />
+      </div>
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">Amount (₱)</label>
+        <input
+          type="number"
+          name="amount"
+          value={formData.amount}
+          onChange={handleChange}
+          required
+          placeholder="0.00"
+          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+        />
+      </div>
+      <div className="flex justify-end gap-3 pt-4 border-t">
+        <button
+          type="button"
+          onClick={onCancel}
+          disabled={saving}
+          className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50"
+        >
+          Cancel
+        </button>
+        <button
+          type="submit"
+          disabled={saving}
+          className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
+        >
+          {saving && (
+            <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+            </svg>
+          )}
+          {saving ? "Saving..." : submitText}
+        </button>
+      </div>
+    </form>
+  );
+}
+
 export default function Income() {
   const { addToast } = useToast();
   const [incomeList, setIncomeList] = useState([]);
@@ -16,12 +107,7 @@ export default function Income() {
   const [selectedIncome, setSelectedIncome] = useState(null);
   const [saving, setSaving] = useState(false);
 
-  const [formData, setFormData] = useState({
-    date: "",
-    source: "Client Payments",
-    description: "",
-    amount: "",
-  });
+
 
   useEffect(() => {
     fetchData();
@@ -57,27 +143,24 @@ export default function Income() {
     return `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`;
   };
 
-  const resetForm = () => {
-    setFormData({
-      date: "",
-      source: "Client Payments",
-      description: "",
-      amount: "",
-    });
+
+
+
+
+
+  const defaultFormData = {
+    date: "",
+    source: "Client Payments",
+    description: "",
+    amount: "",
   };
 
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-  };
-
-  const handleAddIncome = async () => {
+  const handleAddIncome = async (formData) => {
     try {
       setSaving(true);
       const newIncome = await incomeApi.create(formData);
       setIncomeList([newIncome, ...incomeList]);
       setShowAddModal(false);
-      resetForm();
       addToast("Income added successfully!", "success");
     } catch (err) {
       addToast("Error adding income: " + err.message, "error");
@@ -86,18 +169,14 @@ export default function Income() {
     }
   };
 
+
   const handleEditClick = (income) => {
     setSelectedIncome(income);
-    setFormData({
-      date: formatDateForInput(income.date),
-      source: income.source,
-      description: income.description,
-      amount: income.amount.toString(),
-    });
     setShowEditModal(true);
   };
 
-  const handleUpdateIncome = async () => {
+
+  const handleUpdateIncome = async (formData) => {
     try {
       setSaving(true);
       const updated = await incomeApi.update(selectedIncome.id, formData);
@@ -106,7 +185,6 @@ export default function Income() {
       );
       setShowEditModal(false);
       setSelectedIncome(null);
-      resetForm();
       addToast("Income updated successfully!", "success");
     } catch (err) {
       addToast("Error updating income: " + err.message, "error");
@@ -322,10 +400,7 @@ export default function Income() {
           <p className="text-gray-500 mt-1">Track revenue and income sources</p>
         </div>
         <button
-          onClick={() => {
-            resetForm();
-            setShowAddModal(true);
-          }}
+          onClick={() => setShowAddModal(true)}
           className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
         >
           <svg
@@ -343,8 +418,45 @@ export default function Income() {
           </svg>
           Add Income
         </button>
+
       </div>
 
+      <Modal
+        isOpen={showAddModal}
+        onClose={() => setShowAddModal(false)}
+        title="Add Income"
+        size="md"
+      >
+        <IncomeForm
+          initialData={defaultFormData}
+          onSubmit={handleAddIncome}
+          onCancel={() => setShowAddModal(false)}
+          saving={saving}
+          submitText="Add Income"
+        />
+      </Modal>
+
+      <Modal
+        isOpen={showEditModal}
+        onClose={() => setShowEditModal(false)}
+        title="Edit Income"
+        size="md"
+      >
+        {selectedIncome && (
+          <IncomeForm
+            initialData={{
+              date: formatDateForInput(selectedIncome.date),
+              source: selectedIncome.source,
+              description: selectedIncome.description,
+              amount: selectedIncome.amount.toString(),
+            }}
+            onSubmit={handleUpdateIncome}
+            onCancel={() => setShowEditModal(false)}
+            saving={saving}
+            submitText="Update Income"
+          />
+        )}
+      </Modal>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
           <div className="flex items-center justify-between">
@@ -540,6 +652,8 @@ export default function Income() {
               {saving ? "Deleting..." : "Delete"}
             </button>
           </div>
+
+
         </div>
       </Modal>
     </div>

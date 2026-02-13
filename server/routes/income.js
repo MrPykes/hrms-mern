@@ -13,7 +13,13 @@ router.get("/", async (req, res) => {
       source: income.source || "Other",
       description: income.description || "",
       amount: income.amount,
+      clientName: income.clientName || "",
+      dateFrom: income.dateFrom ? new Date(income.dateFrom).toLocaleDateString("en-US") : "",
+      dateTo: income.dateTo ? new Date(income.dateTo).toLocaleDateString("en-US") : "",
+      account: income.account || "",
       status: income.status,
+      receivedBy: income.receivedBy || "",
+      approvedBy: income.approvedBy || "",
     }));
 
     res.json(formatted);
@@ -50,7 +56,17 @@ router.get("/summary", async (req, res) => {
 // Create income
 router.post("/", async (req, res) => {
   try {
-    const { date, source, description, amount, clientName, dateFrom, dateTo, account, status } = req.body;
+    const {
+      date,
+      source,
+      description,
+      amount,
+      clientName,
+      dateFrom,
+      dateTo,
+      account,
+      status,
+    } = req.body;
 
     const income = new Income({
       date: date ? new Date(date) : undefined,
@@ -86,7 +102,19 @@ router.post("/", async (req, res) => {
 // Update income
 router.put("/:id", async (req, res) => {
   try {
-    const { date, source, description, amount, clientName, dateFrom, dateTo, account, status, receivedBy, approvedBy } = req.body;
+    const {
+      date,
+      source,
+      description,
+      amount,
+      clientName,
+      dateFrom,
+      dateTo,
+      account,
+      status,
+      receivedBy,
+      approvedBy,
+    } = req.body;
 
     const income = await Income.findById(req.params.id);
     if (!income) {

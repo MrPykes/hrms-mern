@@ -50,14 +50,18 @@ router.get("/summary", async (req, res) => {
 // Create income
 router.post("/", async (req, res) => {
   try {
-    const { date, source, description, amount } = req.body;
+    const { date, source, description, amount, clientName, dateFrom, dateTo, account, status } = req.body;
 
     const income = new Income({
-      date: new Date(date),
+      date: date ? new Date(date) : undefined,
       source,
       description,
       amount: parseFloat(amount),
-      status: "received",
+      clientName,
+      dateFrom: dateFrom ? new Date(dateFrom) : undefined,
+      dateTo: dateTo ? new Date(dateTo) : undefined,
+      account,
+      status,
     });
     await income.save();
 
@@ -67,6 +71,10 @@ router.post("/", async (req, res) => {
       source: income.source,
       description: income.description,
       amount: income.amount,
+      clientName: income.clientName,
+      dateFrom: income.dateFrom,
+      dateTo: income.dateTo,
+      account: income.account,
       status: income.status,
     });
   } catch (error) {
@@ -78,17 +86,22 @@ router.post("/", async (req, res) => {
 // Update income
 router.put("/:id", async (req, res) => {
   try {
-    const { date, source, description, amount } = req.body;
+    const { date, source, description, amount, clientName, dateFrom, dateTo, account, status } = req.body;
 
     const income = await Income.findById(req.params.id);
     if (!income) {
       return res.status(404).json({ message: "Income not found" });
     }
 
-    income.date = new Date(date);
+    income.date = date ? new Date(date) : income.date;
     income.source = source;
     income.description = description;
     income.amount = parseFloat(amount);
+    income.clientName = clientName;
+    income.dateFrom = dateFrom ? new Date(dateFrom) : undefined;
+    income.dateTo = dateTo ? new Date(dateTo) : undefined;
+    income.account = account;
+    income.status = status;
     await income.save();
 
     res.json({
@@ -97,6 +110,10 @@ router.put("/:id", async (req, res) => {
       source: income.source,
       description: income.description,
       amount: income.amount,
+      clientName: income.clientName,
+      dateFrom: income.dateFrom,
+      dateTo: income.dateTo,
+      account: income.account,
       status: income.status,
     });
   } catch (error) {

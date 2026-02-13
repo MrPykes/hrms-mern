@@ -6,12 +6,12 @@ const incomeSchema = new mongoose.Schema(
     description: String,
     amount: { type: Number, required: true },
     date: { type: Date, default: Date.now },
+    clientName: { type: String },
+    dateFrom: { type: Date },
+    dateTo: { type: Date },
+    account: { type: String },
+    status: { type: String },
     receivedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
-    status: {
-      type: String,
-      enum: ["pending", "approved", "received"],
-      default: "pending",
-    },
     approvedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
   },
   { timestamps: true }

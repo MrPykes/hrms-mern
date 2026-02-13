@@ -200,33 +200,16 @@ export default function Income() {
 
   const columns = [
     { header: "Date", accessor: "date" },
-    {
-      header: "Source",
-      accessor: "source",
-      render: (value) => (
-        <span
-          className={`px-2 py-1 text-xs font-medium rounded-full ${
-            value === "Client Payments"
-              ? "bg-green-100 text-green-700"
-              : value === "Projects"
-                ? "bg-blue-100 text-blue-700"
-                : "bg-purple-100 text-purple-700"
-          }`}
-        >
-          {value}
-        </span>
-      ),
-    },
+    { header: "Source", accessor: "source" },
     { header: "Description", accessor: "description" },
-    {
-      header: "Amount",
-      accessor: "amount",
-      render: (value) => (
-        <span className="font-semibold text-green-600">
-          {formatCurrency(value)}
-        </span>
-      ),
-    },
+    { header: "Amount", accessor: "amount", render: (value) => <span className="font-semibold text-green-600">{formatCurrency(value)}</span> },
+    { header: "Client Name", accessor: "clientName" },
+    { header: "Date From", accessor: "dateFrom" },
+    { header: "Date To", accessor: "dateTo" },
+    { header: "Account", accessor: "account" },
+    { header: "Status", accessor: "status" },
+    { header: "Received By", accessor: "receivedBy" },
+    { header: "Approved By", accessor: "approvedBy" },
     {
       header: "Actions",
       accessor: "id",

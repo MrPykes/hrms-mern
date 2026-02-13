@@ -86,7 +86,7 @@ router.post("/", async (req, res) => {
 // Update income
 router.put("/:id", async (req, res) => {
   try {
-    const { date, source, description, amount, clientName, dateFrom, dateTo, account, status } = req.body;
+    const { date, source, description, amount, clientName, dateFrom, dateTo, account, status, receivedBy, approvedBy } = req.body;
 
     const income = await Income.findById(req.params.id);
     if (!income) {
@@ -102,6 +102,8 @@ router.put("/:id", async (req, res) => {
     income.dateTo = dateTo ? new Date(dateTo) : undefined;
     income.account = account;
     income.status = status;
+    if (receivedBy !== undefined) income.receivedBy = receivedBy;
+    if (approvedBy !== undefined) income.approvedBy = approvedBy;
     await income.save();
 
     res.json({
@@ -115,6 +117,8 @@ router.put("/:id", async (req, res) => {
       dateTo: income.dateTo,
       account: income.account,
       status: income.status,
+      receivedBy: income.receivedBy,
+      approvedBy: income.approvedBy,
     });
   } catch (error) {
     console.error("Error updating income:", error);
